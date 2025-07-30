@@ -940,7 +940,18 @@
         }
       }
     `;
-    document.head.appendChild(style);
+      document.head.appendChild(style);
+
+    // FIX
+    setInterval(() => {
+      if (gameState.currentPlayer === playerName && 
+          document.getElementById("voiceGameArea").style.display === "none" &&
+          gameState.phase === "playing") {
+        console.log("🔧 Auto-Fix: Zeige Voice Game Area für", playerName);
+        showVoiceGameArea();
+      }
+    }, 1000); 
+
   </script>
 </body>
 </html>
