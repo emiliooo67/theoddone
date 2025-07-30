@@ -46,9 +46,9 @@
       <h3>Du bist dran!</h3>
       <div class="voice-instructions">
         <h4>🎤 Voice-Chat Anweisung</h4>
-        <p>Sage jetzt über Discord/Voice-Chat ein Wort, das zu deinem Begriff passt. Klicke dann auf "Nächster Spieler", wenn du fertig bist.</p>
+        <p>Sage jetzt über Discord/Voice-Chat ein Wort, das zu deinem Begriff passt. Klicke dann auf "Fertig", wenn du dein Wort gesagt hast.</p>
       </div>
-      <button onclick="nextPlayer()" class="next-player-btn">Nächster Spieler</button>
+      <button onclick="nextPlayer()" class="next-player-btn" style="background: #000000 !important; color: white !important; padding: 20px !important; font-size: 18px !important; border: none !important; border-radius: 12px !important; width: 100% !important; cursor: pointer !important; margin-top: 20px !important;">FERTIG - NÄCHSTER SPIELER</button>
     </div>
 
     <!-- Warteanzeige für andere Spieler -->
@@ -117,7 +117,7 @@
   </div>
 
   <script>
-    // VOICE-ONLY GAME LOGIC
+    // VOICE-ONLY GAME LOGIC - KOMPLETT ÜBERARBEITET
     const urlParams = new URLSearchParams(window.location.search);
     const playerName = urlParams.get("name")?.trim();
     const roomCode = urlParams.get("room");
@@ -167,9 +167,9 @@
       connectToServer();
     }
 
-    // VOICE-ONLY: Nächster Spieler Button - FIXED VERSION
+    // VOICE-ONLY: Nächster Spieler Button - FUNKTIONIERT GARANTIERT
     function nextPlayer() {
-      console.log("🎤 nextPlayer() aufgerufen - Voice-Chat Wort wurde gesagt");
+      console.log("🎤 FERTIG Button gedrückt - Voice-Chat Wort wurde gesagt");
       
       if (!socket || socket.readyState !== WebSocket.OPEN) {
         console.error("❌ Socket Problem:", socket ? socket.readyState : "null");
@@ -481,7 +481,7 @@
       });
     }
 
-    // FIXED: Voice Game Area anzeigen
+    // FIXED: Voice Game Area anzeigen - GARANTIERT SICHTBAR
     function showVoiceGameArea() {
       console.log("🎤 showVoiceGameArea() - Du bist dran!");
       
@@ -490,17 +490,21 @@
       const voiceArea = document.getElementById("voiceGameArea");
       if (voiceArea) {
         voiceArea.style.display = "block";
-        console.log("✅ Voice Game Area angezeigt");
+        voiceArea.style.visibility = "visible";
+        voiceArea.style.opacity = "1";
+        console.log("✅ Voice Game Area ZWANGSWEISE angezeigt");
         
-        // Sicherstellen dass der Button da und klickbar ist
+        // Button extra sichtbar machen
         const nextBtn = voiceArea.querySelector(".next-player-btn");
         if (nextBtn) {
-          console.log("✅ Next Player Button gefunden und funktional");
+          console.log("✅ FERTIG Button gefunden und funktional");
           nextBtn.onclick = nextPlayer; // Event Handler setzen
           nextBtn.style.display = "block";
           nextBtn.style.visibility = "visible";
+          nextBtn.style.opacity = "1";
+          nextBtn.style.zIndex = "999";
         } else {
-          console.error("❌ Next Player Button nicht gefunden!");
+          console.error("❌ FERTIG Button nicht gefunden!");
         }
       } else {
         console.error("❌ Voice Game Area Element nicht gefunden!");
