@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheOddOne – Willkommen im Spiel der Worte und Lügen.</title>
+  <link rel="icon" type="image/png" href="root/theoddone/assets/logo.png">
+  <link rel="stylesheet" href="main.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo"></div>
+      <p class="subtitle">Denk nach, rede klug – oder tu so.</p>
+    </div>
+    
+    <div class="game-options">
+      <!-- Neues Spiel erstellen -->
+      <div class="option-card">
+        <h2>Neues Spiel erstellen</h2>
+        <p>Erstelle einen neuen Raum und lade deine Freunde ein:</p>
+        <div class="input-group">
+          <input type="text" id="nameInput" placeholder="Dein Name" maxlength="20" />
+          <button onclick="createRoom()" class="primary-btn">Spiel starten</button>
+        </div>
+      </div>
+
+      <!-- Bestehendem Spiel beitreten -->
+      <div class="option-card">
+        <h2>Bestehendem Spiel beitreten</h2>
+        <p>Hast du einen Raumcode erhalten?</p>
+        <div class="input-group">
+          <input type="text" id="joinNameInput" placeholder="Dein Name" maxlength="20" />
+          <input type="text" id="roomCodeInput" placeholder="Raumcode (z.B. ABCD)" maxlength="4" style="text-transform: uppercase;" />
+          <button onclick="joinRoom()" class="secondary-btn">Beitreten</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-rules">
+      <h3>Spielregeln</h3>
+      <ul>
+        <li>Mindestens 3 Spieler erforderlich</li>
+        <li>Alle Spieler außer den Impostern erhalten das gleiche geheime Wort</li>
+        <li>Imposter kennen das Wort nicht und müssen es erraten</li>
+        <li>Reihum sagt jeder Spieler ein Wort, das zum geheimen Wort passt</li>
+        <li>Versucht herauszufinden, wer der Imposter ist!</li>
+        <li>Der Imposter gewinnt, wenn er das geheime Wort errät</li>
+        <li>Die anderen Spieler gewinnen, wenn sie den Imposter entlarven</li>
+      </ul>
+    </div>
+
+    <!-- Footer mit Links -->
+    <div class="footer-links">
+      <p>
+        <a href="impressum.html">Impressum</a> | 
+        <a href="datenschutz.html">Datenschutz</a> | 
+        <a href="kontakt.html">Kontakt</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Enter-Taste Support
+    document.addEventListener('DOMContentLoaded', function() {
+      const nameInput = document.getElementById('nameInput');
+      const joinNameInput = document.getElementById('joinNameInput');
+      const roomCodeInput = document.getElementById('roomCodeInput');
+
+      nameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          createRoom();
+        }
+      });
+
+      joinNameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          roomCodeInput.focus();
+        }
+      });
+
+      roomCodeInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          joinRoom();
+        }
+      });
+
+      // Automatische Großbuchstaben für Raumcode
+      roomCodeInput.addEventListener('input', function(e) {
+        e.target.value = e.target.value.toUpperCase();
+      });
+    });
+
+    function generateRoomCode() {
+      // Bessere Raumcode-Generierung (vermeidet verwirrende Zeichen)
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Ohne I, O, 0, 1
+      let result = '';
+      for (let i = 0; i < 4; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    }
+
+    function createRoom() {
+      const name = document.getElementById("nameInput").value.trim();
+      if (name === "") {
+        alert("Bitte gib einen Namen ein.");
+        document.getElementById("nameInput").focus();
+        return;
+      }
+
+      if (name.length > 20) {
+        alert("Name ist zu lang (max. 20 Zeichen).");
+        return;
+      }
+
+      const roomCode = generateRoomCode();
+      console.log(`Neuer Raum erstellt: ${roomCode} für Spieler: ${name}`);
+      window.location.href = `lobby.html?room=${roomCode}&name=${encodeURIComponent(name)}`;
+    }
+
+    function joinRoom() {
+      const name = document.getElementById("joinNameInput").value.trim();
+      const roomCode = document.getElementById("roomCodeInput").value.trim().toUpperCase();
+
+      if (name === "") {
+        alert("Bitte gib deinen Namen ein.");
+        document.getElementById("joinNameInput").focus();
+        return;
+      }
+
+      if (roomCode === "") {
+        alert("Bitte gib den Raumcode ein.");
+        document.getElementById("roomCodeInput").focus();
+        return;
+      }
+
+      if (roomCode.length !== 4) {
+        alert("Raumcode muss 4 Zeichen lang sein.");
+        document.getElementById("roomCodeInput").focus();
+        return;
+      }
+
+      if (name.length > 20) {
+        alert("Name ist zu lang (max. 20 Zeichen).");
+        return;
+      }
+
+      console.log(`Trete Raum bei: ${roomCode} als Spieler: ${name}`);
+      window.location.href = `lobby.html?room=${roomCode}&name=${encodeURIComponent(name)}`;
+    }
+
+    // URL-Parameter verarbeiten (falls jemand direkt mit Parametern kommt)
+    window.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const roomCode = urlParams.get('room');
+      const playerName = urlParams.get('name');
+
+      if (roomCode && playerName) {
+        // Direkt zur Lobby weiterleiten
+        window.location.href = `lobby.html?room=${roomCode}&name=${encodeURIComponent(playerName)}`;
+      }
+    });
+  </script>
+</body>
+</html>
