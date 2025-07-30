@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheOddOne – Datenschutzerklärung</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+  <link rel="stylesheet" href="main.css">
+  <style>
+    /* Zusätzliche Styles für Datenschutz */
+    .datenschutz-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    .datenschutz-header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #E5E7EB;
+    }
+
+    .datenschutz-header .logo {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+      background: url('/assets/logo.png') center/contain no-repeat;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 30px;
+      color: #DC2626;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .back-link:hover {
+      color: #B91C1C;
+      transform: translateX(-5px);
+    }
+
+    .content-section {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(166, 166, 166, 0.2);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 20px 0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      backdrop-filter: blur(10px);
+    }
+
+    .section-title {
+      color: #C42000;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid rgba(196, 32, 0, 0.2);
+    }
+
+    .subsection-title {
+      color: #000000;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 25px 0 15px 0;
+    }
+
+    .datenschutz-text {
+      color: #000000;
+      line-height: 1.7;
+      margin-bottom: 15px;
+      text-align: justify;
+    }
+
+    .datenschutz-text strong {
+      color: #C42000;
+      font-weight: 600;
+    }
+
+    .contact-info {
+      background: rgba(196, 32, 0, 0.05);
+      border-left: 4px solid #C42000;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+
+    .contact-info strong {
+      color: #C42000;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .legal-highlight {
+      background: rgba(0, 0, 0, 0.05);
+      border-left: 4px solid #000000;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+
+    .data-list {
+      background: rgba(250, 250, 250, 0.8);
+      border: 1px solid rgba(166, 166, 166, 0.2);
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+
+    .data-list ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .data-list li {
+      padding: 5px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .data-list li::before {
+      content: "•";
+      color: #C42000;
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+    }
+
+    .footer-links {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #E5E7EB;
+      color: #6B7280;
+      font-size: 14px;
+    }
+
+    .footer-links a {
+      color: #C42000;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+
+    .footer-links a:hover {
+      color: #B91C1C;
+    }
+
+    .toc {
+      background: rgba(250, 250, 250, 0.8);
+      border: 1px solid rgba(166, 166, 166, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .toc h3 {
+      color: #000000;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .toc ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .toc li {
+      margin: 8px 0;
+    }
+
+    .toc a {
+      color: #C42000;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .toc a:hover {
+      color: #B91C1C;
+      text-decoration: underline;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      .datenschutz-container {
+        padding: 15px;
+      }
+
+      .content-section {
+        padding: 20px;
+      }
+
+      .section-title {
+        font-size: 1.3rem;
+      }
+
+      .subsection-title {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="datenschutz-container">
+    <a href="index.html" class="back-link">← Zurück zum Spiel</a>
+    
+    <div class="datenschutz-header">
+      <div class="logo"></div>
+      <h1>TheOddOne</h1>
+      <p class="subtitle">Datenschutzerklärung</p>
+    </div>
+
+    <!-- Inhaltsverzeichnis -->
+    <div class="toc">
+      <h3>Inhaltsverzeichnis</h3>
+      <ul>
+        <li><a href="#ueberblick">1. Datenschutz auf einen Blick</a></li>
+        <li><a href="#hosting">2. Hosting</a></li>
+        <li><a href="#hinweise">3. Allgemeine Hinweise und Pflichtinformationen</a></li>
+        <li><a href="#datenerfassung">4. Datenerfassung auf dieser Website</a></li>
+        <li><a href="#analyse">5. Analyse-Tools und Werbung</a></li>
+      </ul>
+    </div>
+
+    <!-- 1. Datenschutz auf einen Blick -->
+    <div class="content-section" id="ueberblick">
+      <h2 class="section-title">1. Datenschutz auf einen Blick</h2>
+      
+      <h3 class="subsection-title">Allgemeine Hinweise</h3>
+      <p class="datenschutz-text">Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen. Personenbezogene Daten sind alle Daten, mit denen Sie persönlich identifiziert werden können. Ausführliche Informationen zum Thema Datenschutz entnehmen Sie unserer unter diesem Text aufgeführten Datenschutzerklärung.</p>
+
+      <h3 class="subsection-title">Datenerfassung auf dieser Website</h3>
+      <p class="datenschutz-text"><strong>Wer ist verantwortlich für die Datenerfassung auf dieser Website?</strong></p>
+      <p class="datenschutz-text">Die Datenverarbeitung auf dieser Website erfolgt durch den Websitebetreiber. Dessen Kontaktdaten können Sie dem Abschnitt „Hinweis zur Verantwortlichen Stelle" in dieser Datenschutzerklärung entnehmen.</p>
+
+      <p class="datenschutz-text"><strong>Wie erfassen wir Ihre Daten?</strong></p>
+      <p class="datenschutz-text">Ihre Daten werden zum einen dadurch erhoben, dass Sie uns diese mitteilen. Hierbei kann es sich z. B. um Daten handeln, die Sie in ein Kontaktformular eingeben.</p>
+      <p class="datenschutz-text">Andere Daten werden automatisch oder nach Ihrer Einwilligung beim Besuch der Website durch unsere IT-Systeme erfasst. Das sind vor allem technische Daten (z. B. Internetbrowser, Betriebssystem oder Uhrzeit des Seitenaufrufs). Die Erfassung dieser Daten erfolgt automatisch, sobald Sie diese Website betreten.</p>
+
+      <p class="datenschutz-text"><strong>Wofür nutzen wir Ihre Daten?</strong></p>
+      <p class="datenschutz-text">Ein Teil der Daten wird erhoben, um eine fehlerfreie Bereitstellung der Website zu gewährleisten. Andere Daten können zur Analyse Ihres Nutzerverhaltens verwendet werden. Sofern über die Website Verträge geschlossen oder angebahnt werden können, werden die übermittelten Daten auch für Vertragsangebote, Bestellungen oder sonstige Auftragsanfragen verarbeitet.</p>
+
+      <p class="datenschutz-text"><strong>Welche Rechte haben Sie bezüglich Ihrer Daten?</strong></p>
+      <p class="datenschutz-text">Sie haben jederzeit das Recht, unentgeltlich Auskunft über Herkunft, Empfänger und Zweck Ihrer gespeicherten personenbezogenen Daten zu erhalten. Sie haben außerdem ein Recht, die Berichtigung oder Löschung dieser Daten zu verlangen. Wenn Sie eine Einwilligung zur Datenverarbeitung erteilt haben, können Sie diese Einwilligung jederzeit für die Zukunft widerrufen. Außerdem haben Sie das Recht, unter bestimmten Umständen die Einschränkung der Verarbeitung Ihrer personenbezogenen Daten zu verlangen. Des Weiteren steht Ihnen ein Beschwerderecht bei der zuständigen Aufsichtsbehörde zu.</p>
+    </div>
+
+    <!-- 2. Hosting -->
+    <div class="content-section" id="hosting">
+      <h2 class="section-title">2. Hosting</h2>
+      <p class="datenschutz-text">Wir hosten die Inhalte unserer Website bei folgendem Anbieter:</p>
+      
+      <h3 class="subsection-title">IONOS</h3>
+      <p class="datenschutz-text">Anbieter ist die IONOS SE, Elgendorfer Str. 57, 56410 Montabaur (nachfolgend IONOS). Wenn Sie unsere Website besuchen, erfasst IONOS verschiedene Logfiles inklusive Ihrer IP-Adressen. Details entnehmen Sie der Datenschutzerklärung von IONOS: <a href="https://www.ionos.de/terms-gtc/terms-privacy" target="_blank" style="color: #C42000;">https://www.ionos.de/terms-gtc/terms-privacy</a>.</p>
+      
+      <p class="datenschutz-text">Die Verwendung von IONOS erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO. Wir haben ein berechtigtes Interesse an einer möglichst zuverlässigen Darstellung unserer Website. Sofern eine entsprechende Einwilligung abgefragt wurde, erfolgt die Verarbeitung ausschließlich auf Grundlage von Art. 6 Abs. 1 lit. a DSGVO und § 25 Abs. 1 TDDDG, soweit die Einwilligung die Speicherung von Cookies oder den Zugriff auf Informationen im Endgerät des Nutzers (z. B. Device-Fingerprinting) im Sinne des TDDDG umfasst. Die Einwilligung ist jederzeit widerrufbar.</p>
+
+      <h3 class="subsection-title">Auftragsverarbeitung</h3>
+      <p class="datenschutz-text">Wir haben einen Vertrag über Auftragsverarbeitung (AVV) zur Nutzung des oben genannten Dienstes geschlossen. Hierbei handelt es sich um einen datenschutzrechtlich vorgeschriebenen Vertrag, der gewährleistet, dass dieser die personenbezogenen Daten unserer Websitebesucher nur nach unseren Weisungen und unter Einhaltung der DSGVO verarbeitet.</p>
+    </div>
+
+    <!-- 3. Allgemeine Hinweise -->
+    <div class="content-section" id="hinweise">
+      <h2 class="section-title">3. Allgemeine Hinweise und Pflichtinformationen</h2>
+      
+      <h3 class="subsection-title">Datenschutz</h3>
+      <p class="datenschutz-text">Die Betreiber dieser Seiten nehmen den Schutz Ihrer persönlichen Daten sehr ernst. Wir behandeln Ihre personenbezogenen Daten vertraulich und entsprechend den gesetzlichen Datenschutzvorschriften sowie dieser Datenschutzerklärung.</p>
+      
+      <p class="datenschutz-text">Wenn Sie diese Website benutzen, werden verschiedene personenbezogene Daten erhoben. Personenbezogene Daten sind Daten, mit denen Sie persönlich identifiziert werden können. Die vorliegende Datenschutzerklärung erläutert, welche Daten wir erheben und wofür wir sie nutzen. Sie erläutert auch, wie und zu welchem Zweck das geschieht.</p>
+
+      <h3 class="subsection-title">Hinweis zur verantwortlichen Stelle</h3>
+      <div class="contact-info">
+        <strong>Die verantwortliche Stelle für die Datenverarbeitung auf dieser Website ist:</strong>
+        <p>Emilio Wagner<br>
+        Holzäckerweg 17<br>
+        34582 Borken</p>
+        <p>Telefon: 01744026696<br>
+        E-Mail: info@theodd.one</p>
+      </div>
+      <p class="datenschutz-text">Verantwortliche Stelle ist die natürliche oder juristische Person, die allein oder gemeinsam mit anderen über die Zwecke und Mittel der Verarbeitung von personenbezogenen Daten (z. B. Namen, E-Mail-Adressen o. Ä.) entscheidet.</p>
+
+      <h3 class="subsection-title">Speicherdauer</h3>
+      <p class="datenschutz-text">Soweit innerhalb dieser Datenschutzerklärung keine speziellere Speicherdauer genannt wurde, verbleiben Ihre personenbezogenen Daten bei uns, bis der Zweck für die Datenverarbeitung entfällt. Wenn Sie ein berechtigtes Löschersuchen geltend machen oder eine Einwilligung zur Datenverarbeitung widerrufen, werden Ihre Daten gelöscht, sofern wir keine anderen rechtlich zulässigen Gründe für die Speicherung Ihrer personenbezogenen Daten haben (z. B. steuer- oder handelsrechtliche Aufbewahrungsfristen); im letztgenannten Fall erfolgt die Löschung nach Fortfall dieser Gründe.</p>
+    </div>
+
+    <!-- 4. Datenerfassung -->
+    <div class="content-section" id="datenerfassung">
+      <h2 class="section-title">4. Datenerfassung auf dieser Website</h2>
+      
+      <h3 class="subsection-title">Cookies</h3>
+      <p class="datenschutz-text">Unsere Internetseiten verwenden so genannte „Cookies". Cookies sind kleine Datenpakete und richten auf Ihrem Endgerät keinen Schaden an. Sie werden entweder vorübergehend für die Dauer einer Sitzung (Session-Cookies) oder dauerhaft (permanente Cookies) auf Ihrem Endgerät gespeichert.</p>
+
+      <h3 class="subsection-title">Server-Log-Dateien</h3>
+      <p class="datenschutz-text">Der Provider der Seiten erhebt und speichert automatisch Informationen in so genannten Server-Log-Dateien, die Ihr Browser automatisch an uns übermittelt. Dies sind:</p>
+      
+      <div class="data-list">
+        <ul>
+          <li>Browsertyp und Browserversion</li>
+          <li>verwendetes Betriebssystem</li>
+          <li>Referrer URL</li>
+          <li>Hostname des zugreifenden Rechners</li>
+          <li>Uhrzeit der Serveranfrage</li>
+          <li>IP-Adresse</li>
+        </ul>
+      </div>
+
+      <p class="datenschutz-text">Eine Zusammenführung dieser Daten mit anderen Datenquellen wird nicht vorgenommen. Die Erfassung dieser Daten erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO. Der Websitebetreiber hat ein berechtigtes Interesse an der technisch fehlerfreien Darstellung und der Optimierung seiner Website – hierzu müssen die Server-Log-Files erfasst werden.</p>
+
+      <h3 class="subsection-title">Kontaktformular</h3>
+      <p class="datenschutz-text">Wenn Sie uns per Kontaktformular Anfragen zukommen lassen, werden Ihre Angaben aus dem Anfrageformular inklusive der von Ihnen dort angegebenen Kontaktdaten zwecks Bearbeitung der Anfrage und für den Fall von Anschlussfragen bei uns gespeichert. Diese Daten geben wir nicht ohne Ihre Einwilligung weiter.</p>
+    </div>
+
+    <!-- 5. Analyse-Tools -->
+    <div class="content-section" id="analyse">
+      <h2 class="section-title">5. Analyse-Tools und Werbung</h2>
+      
+      <h3 class="subsection-title">IONOS WebAnalytics</h3>
+      <p class="datenschutz-text">Diese Website nutzt die Analysedienste von IONOS WebAnalytics (im Folgenden: IONOS). Anbieter ist die 1&1 IONOS SE, Elgendorfer Straße 57, D – 56410 Montabaur. Im Rahmen der Analysen mit IONOS können u. a. Besucherzahlen und –verhalten (z. B. Anzahl der Seitenaufrufe, Dauer eines Webseitenbesuchs, Absprungraten), Besucherquellen (d. h., von welcher Seite der Besucher kommt), Besucherstandorte sowie technische Daten (Browser- und Betriebssystemversionen) analysiert werden.</p>
+
+      <div class="legal-highlight">
+        <p><strong>Wichtiger Hinweis:</strong> Die Datenerfassung erfolgt laut IONOS vollständig anonymisiert, sodass sie nicht zu einzelnen Personen zurückverfolgt werden kann. Cookies werden von IONOS WebAnalytics nicht gespeichert.</p>
+      </div>
+    </div>
+
+    <div class="footer-links">
+      <p>Quelle: <a href="https://www.e-recht24.de" target="_blank">https://www.e-recht24.de</a></p>
+      <p>
+        <a href="impressum.html">Impressum</a> | 
+        <a href="kontakt.html">Kontakt</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

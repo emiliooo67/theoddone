@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheOddOne – Impressum</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+  <link rel="stylesheet" href="main.css">
+  <style>
+    /* Zusätzliche Styles für Impressum */
+    .impressum-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    .impressum-header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #E5E7EB;
+    }
+
+    .impressum-header .logo {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+      background: url('/assets/logo.png') center/contain no-repeat;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 30px;
+      color: #C42000;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .back-link:hover {
+      color: #B91C1C;
+      transform: translateX(-5px);
+    }
+
+    .content-section {
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid rgba(166, 166, 166, 0.2);
+      border-radius: 16px;
+      padding: 30px;
+      margin: 20px 0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+      backdrop-filter: blur(10px);
+    }
+
+    .section-title {
+      color: #C42000;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid rgba(196, 32, 0, 0.2);
+    }
+
+    .subsection-title {
+      color: #000000;
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 25px 0 15px 0;
+    }
+
+    .impressum-text {
+      color: #000000;
+      line-height: 1.7;
+      margin-bottom: 15px;
+      text-align: justify;
+    }
+
+    .contact-card {
+      background: rgba(196, 32, 0, 0.05);
+      border-left: 4px solid #C42000;
+      padding: 25px;
+      margin: 25px 0;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(196, 32, 0, 0.1);
+    }
+
+    .contact-card h3 {
+      color: #C42000;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+
+    .contact-card p {
+      color: #000000;
+      font-weight: 500;
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+
+    .contact-card strong {
+      color: #C42000;
+    }
+
+    .contact-card a {
+      color: #C42000;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .contact-card a:hover {
+      color: #B91C1C;
+      text-decoration: underline;
+    }
+
+    .disclaimer-section {
+      background: rgba(0, 0, 0, 0.05);
+      border-left: 4px solid #000000;
+      padding: 25px;
+      margin: 25px 0;
+      border-radius: 12px;
+    }
+
+    .disclaimer-section h3 {
+      color: #000000;
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .disclaimer-section p {
+      color: #000000;
+      line-height: 1.6;
+      margin-bottom: 15px;
+      text-align: justify;
+    }
+
+    .footer-info {
+      background: rgba(250, 250, 250, 0.8);
+      border: 1px solid rgba(166, 166, 166, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 30px 0;
+      text-align: center;
+    }
+
+    .footer-info p {
+      color: #616161;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .footer-links {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #E5E7EB;
+      color: #6B7280;
+      font-size: 14px;
+    }
+
+    .footer-links a {
+      color: #C42000;
+      text-decoration: none;
+      margin: 0 10px;
+    }
+
+    .footer-links a:hover {
+      color: #B91C1C;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      .impressum-container {
+        padding: 15px;
+      }
+
+      .content-section, .contact-card, .disclaimer-section {
+        padding: 20px;
+      }
+
+      .section-title {
+        font-size: 1.3rem;
+      }
+
+      .subsection-title {
+        font-size: 1.1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="impressum-container">
+    <a href="index.html" class="back-link">← Zurück zum Spiel</a>
+    
+    <div class="impressum-header">
+      <div class="logo"></div>
+      <h1>TheOddOne</h1>
+      <p class="subtitle">Impressum</p>
+    </div>
+
+    <div class="content-section">
+      <h2 class="section-title">Impressum</h2>
+      <p class="impressum-text"><strong>Angaben gemäß § 5 DDG</strong></p>
+      
+      <div class="contact-card">
+        <h3>Anbieter</h3>
+        <p><strong>Emilio Wagner</strong><br>
+        Holzäckerweg 17<br>
+        34582 Borken</p>
+        
+        <p><strong>Vertreten durch:</strong> Emilio Wagner</p>
+        
+        <p><strong>Kontakt:</strong><br>
+        Telefon: <a href="tel:+4901744026696">+49 (0) 174 402 6696</a><br>
+        E-Mail: <a href="mailto:info@theodd.one">info@theodd.one</a></p>
+      </div>
+    </div>
+
+    <div class="content-section">
+      <h2 class="section-title">Haftungsausschluss</h2>
+
+      <div class="disclaimer-section">
+        <h3>Haftung für Inhalte</h3>
+        <p>Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen. Als Diensteanbieter sind wir gemäß § 7 Abs.1 DDG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen.</p>
+        
+        <p>Verpflichtungen zur Entfernung oder Sperrung der Nutzung von Informationen nach den allgemeinen Gesetzen bleiben hiervon unberührt. Eine diesbezügliche Haftung ist jedoch erst ab dem Zeitpunkt der Kenntnis einer konkreten Rechtsverletzung möglich. Bei Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese Inhalte umgehend entfernen.</p>
+      </div>
+
+      <div class="disclaimer-section">
+        <h3>Haftung für Links</h3>
+        <p>Unser Angebot enthält Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der Seiten verantwortlich. Die verlinkten Seiten wurden zum Zeitpunkt der Verlinkung auf mögliche Rechtsverstöße überprüft. Rechtswidrige Inhalte waren zum Zeitpunkt der Verlinkung nicht erkennbar.</p>
+        
+        <p>Eine permanente inhaltliche Kontrolle der verlinkten Seiten ist jedoch ohne konkrete Anhaltspunkte einer Rechtsverletzung nicht zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Links umgehend entfernen.</p>
+      </div>
+
+      <div class="disclaimer-section">
+        <h3>Urheberrecht</h3>
+        <p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers. Downloads und Kopien dieser Seite sind nur für den privaten, nicht kommerziellen Gebrauch gestattet.</p>
+        
+        <p>Soweit die Inhalte auf dieser Seite nicht vom Betreiber erstellt wurden, werden die Urheberrechte Dritter beachtet. Insbesondere werden Inhalte Dritter als solche gekennzeichnet. Sollten Sie trotzdem auf eine Urheberrechtsverletzung aufmerksam werden, bitten wir um einen entsprechenden Hinweis. Bei Bekanntwerden von Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.</p>
+      </div>
+
+      <div class="disclaimer-section">
+        <h3>Datenschutz</h3>
+        <p>Die Nutzung unserer Webseite ist in der Regel ohne Angabe personenbezogener Daten möglich. Soweit auf unseren Seiten personenbezogene Daten (beispielsweise Name, Anschrift oder eMail-Adressen) erhoben werden, erfolgt dies, soweit möglich, stets auf freiwilliger Basis. Diese Daten werden ohne Ihre ausdrückliche Zustimmung nicht an Dritte weitergegeben.</p>
+        
+        <p>Wir weisen darauf hin, dass die Datenübertragung im Internet (z.B. bei der Kommunikation per E-Mail) Sicherheitslücken aufweisen kann. Ein lückenloser Schutz der Daten vor dem Zugriff durch Dritte ist nicht möglich. Der Nutzung von im Rahmen der Impressumspflicht veröffentlichten Kontaktdaten durch Dritte zur Übersendung von nicht ausdrücklich angeforderter Werbung und Informationsmaterialien wird hiermit ausdrücklich widersprochen. Die Betreiber der Seiten behalten sich ausdrücklich rechtliche Schritte im Falle der unverlangten Zusendung von Werbeinformationen, etwa durch Spam-Mails, vor.</p>
+      </div>
+    </div>
+
+    <div class="footer-info">
+      <p>Impressum von Impressum-Generator.de</p>
+      <p>Powered by Franziska Hasselbach, Bonn</p>
+    </div>
+
+    <div class="footer-links">
+      <p>
+        <a href="kontakt.html">Kontakt</a> | 
+        <a href="datenschutz.html">Datenschutz</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
