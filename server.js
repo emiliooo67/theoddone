@@ -6,69 +6,18 @@ const WebSocket = require("ws");
 let rooms = {};
 let games = {};
 
-// Wörter-Datenbank
-const WORD_CATEGORIES = {
-  animals: ["Hund", "Katze", "Elefant", "Pinguin", "Giraffe", "Löwe", "Tiger", "Bär"],
-  food: ["Pizza", "Hamburger", "Spaghetti", "Sushi", "Schokolade", "Eis", "Kuchen", "Brot"],
-  objects: ["Auto", "Stuhl", "Fernseher", "Handy", "Buch", "Brille", "Uhr", "Schlüssel"],
-  places: ["Strand", "Wald", "Stadt", "Schule", "Krankenhaus", "Restaurant", "Kino", "Park"],
-  activities: ["Schwimmen", "Lesen", "Kochen", "Tanzen", "Singen", "Malen", "Joggen", "Schlafen"]
-};
+// 🔒 SICHER: Wörter aus separater JSON-Datei laden
+let WORD_DATABASE = {};
+try {
+  const wordsData = fs.readFileSync(path.join(__dirname, 'words.json'), 'utf8');
+  WORD_DATABASE = JSON.parse(wordsData);
+  console.log(`📚 Wörter-Datenbank geladen: ${WORD_DATABASE.metadata.totalWords} Wörter in ${WORD_DATABASE.metadata.categories} Kategorien`);
+} catch (error) {
+  console.error("❌ Fehler beim Laden der Wörter-Datenbank:", error);
+  process.exit(1);
+}
 
-// Hinweise für Imposter
-const WORD_HINTS = {
-  // Tiere
-  "Hund": "Ein treuer Begleiter des Menschen",
-  "Katze": "Schnurrt gerne und jagt Mäuse",
-  "Elefant": "Das größte Landtier der Welt",
-  "Pinguin": "Schwarz-weißer Vogel, der nicht fliegen kann",
-  "Giraffe": "Das Tier mit dem längsten Hals",
-  "Löwe": "Der König der Tiere",
-  "Tiger": "Große Raubkatze mit Streifen",
-  "Bär": "Großes, pelziges Säugetier",
-  
-  // Essen
-  "Pizza": "Italienisches Gericht mit Teig und Belag",
-  "Hamburger": "Fast Food zwischen zwei Brötchenhälften",
-  "Spaghetti": "Lange, dünne Nudeln",
-  "Sushi": "Japanische Spezialität mit rohem Fisch",
-  "Schokolade": "Süße Leckerei aus Kakao",
-  "Eis": "Kalte, gefrorene Süßspeise",
-  "Kuchen": "Süße Backware für besondere Anlässe",
-  "Brot": "Grundnahrungsmittel aus Getreide",
-  
-  // Gegenstände
-  "Auto": "Fortbewegungsmittel mit vier Rädern",
-  "Stuhl": "Sitzgelegenheit mit Rückenlehne",
-  "Fernseher": "Gerät zum Schauen von Filmen und Serien",
-  "Handy": "Mobiles Kommunikationsgerät",
-  "Buch": "Sammlung von bedruckten Seiten",
-  "Brille": "Sehhilfe für die Augen",
-  "Uhr": "Zeigt die aktuelle Zeit an",
-  "Schlüssel": "Öffnet Türen und Schlösser",
-  
-  // Orte
-  "Strand": "Sandiger Ort am Meer",
-  "Wald": "Viele Bäume stehen hier dicht beieinander",
-  "Stadt": "Viele Menschen leben hier zusammen",
-  "Schule": "Ort zum Lernen für Kinder",
-  "Krankenhaus": "Hier werden kranke Menschen behandelt",
-  "Restaurant": "Hier kann man Essen bestellen",
-  "Kino": "Hier werden Filme gezeigt",
-  "Park": "Grünfläche in der Stadt",
-  
-  // Aktivitäten
-  "Schwimmen": "Bewegung im Wasser",
-  "Lesen": "Bücher oder Texte durchgehen",
-  "Kochen": "Zubereitung von Mahlzeiten",
-  "Tanzen": "Bewegung zur Musik",
-  "Singen": "Melodien mit der Stimme erzeugen",
-  "Malen": "Bilder mit Farben erstellen",
-  "Joggen": "Langsames Laufen als Sport",
-  "Schlafen": "Nächtliche Ruhephase"
-};
-
-// FIXED: Bessere Socket-Verwaltung
+// 🔒 SICHER: Socket-Verwaltung
 let playerSockets = {}; // roomCode_playerName -> WebSocket
 
 // ============ HTTP-Server ============
@@ -78,6 +27,13 @@ const server = http.createServer((req, res) => {
   if (cleanUrl === "/favicon.ico") {
     res.writeHead(204, { "Content-Type": "image/x-icon" });
     res.end();
+    return;
+  }
+
+  // 🔒 SICHER: words.json vor Client-Zugriff schützen
+  if (cleanUrl === "/words.json") {
+    res.writeHead(403, { "Content-Type": "text/plain" });
+    res.end("403 Forbidden - Access Denied");
     return;
   }
   
@@ -118,12 +74,19 @@ server.listen(8080, () => {
 // ============ WebSocket-Server ============
 const wss = new WebSocket.Server({ port: 3000 });
 
-// Hilfsfunktionen
+// 🔒 SICHER: Hilfsfunktionen
 function getRandomWord() {
-  const categories = Object.keys(WORD_CATEGORIES);
+  const categories = Object.keys(WORD_DATABASE.categories);
   const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-  const words = WORD_CATEGORIES[randomCategory];
-  return words[Math.floor(Math.random() * words.length)];
+  const words = WORD_DATABASE.categories[randomCategory];
+  const selectedWord = words[Math.floor(Math.random() * words.length)];
+  
+  console.log(`🎲 Zufälliges Wort gewählt: "${selectedWord}" aus Kategorie: ${randomCategory}`);
+  return selectedWord;
+}
+
+function getWordHint(word) {
+  return WORD_DATABASE.hints[word] || "Kein Hinweis verfügbar";
 }
 
 function selectImposters(players, imposterCount) {
@@ -135,7 +98,7 @@ function getSocketKey(roomCode, playerName) {
   return `${roomCode}_${playerName}`;
 }
 
-// FIXED: Verbesserte Broadcasting-Funktion mit detailliertem Logging
+// 🔒 SICHER: Broadcasting-Funktion mit detailliertem Logging
 function broadcastToRoom(roomCode, message) {
   if (!rooms[roomCode]) {
     console.log(`❌ Raum ${roomCode} existiert nicht für Broadcast`);
@@ -148,7 +111,6 @@ function broadcastToRoom(roomCode, message) {
 
   console.log(`📡 Broadcasting zu Raum ${roomCode}: ${message.type} an ${room.players.length} Spieler`);
 
-  // WICHTIGER FIX: Verwende playerSockets anstatt room.sockets Array
   room.players.forEach((playerName) => {
     const socketKey = getSocketKey(roomCode, playerName);
     const socket = playerSockets[socketKey];
@@ -161,22 +123,19 @@ function broadcastToRoom(roomCode, message) {
       } catch (error) {
         console.error(`  ❌ Fehler beim Senden an ${playerName}:`, error.message);
         failedPlayers.push(playerName);
-        
-        // Socket ist defekt - entfernen
         delete playerSockets[socketKey];
       }
     } else {
       console.log(`  ⚠️ Socket nicht verfügbar/bereit für ${playerName}`);
       failedPlayers.push(playerName);
       
-      // Versuche Socket aus room.sockets Array zu holen (Fallback)
       const playerIndex = room.players.indexOf(playerName);
       if (playerIndex !== -1 && room.sockets[playerIndex]) {
         const fallbackSocket = room.sockets[playerIndex];
         if (fallbackSocket.readyState === WebSocket.OPEN) {
           try {
             fallbackSocket.send(JSON.stringify(message));
-            playerSockets[socketKey] = fallbackSocket; // Update mapping
+            playerSockets[socketKey] = fallbackSocket;
             successCount++;
             console.log(`  🔄 Fallback erfolgreich für ${playerName}`);
             failedPlayers = failedPlayers.filter(p => p !== playerName);
@@ -204,7 +163,7 @@ function broadcastToGame(roomCode, message) {
   return broadcastToRoom(roomCode, message);
 }
 
-// FIXED: Socket-Cleanup verbessert
+// 🔒 SICHER: Socket-Cleanup verbessert
 function removePlayerFromRoom(roomCode, playerName) {
   if (!rooms[roomCode]) return;
   
@@ -214,15 +173,12 @@ function removePlayerFromRoom(roomCode, playerName) {
   if (playerIndex !== -1) {
     console.log(`🔴 Entferne ${playerName} aus Raum ${roomCode}`);
     
-    // Entferne aus Arrays
     room.players.splice(playerIndex, 1);
     room.sockets.splice(playerIndex, 1);
     
-    // Entferne Socket-Mapping
     const socketKey = getSocketKey(roomCode, playerName);
     delete playerSockets[socketKey];
     
-    // Game-Logic
     if (games[roomCode]) {
       const game = games[roomCode];
       game.players = game.players.filter(p => p !== playerName);
@@ -234,13 +190,11 @@ function removePlayerFromRoom(roomCode, playerName) {
       }
     }
     
-    // Broadcast Update
     broadcastToRoom(roomCode, {
       type: "playerList", 
       players: room.players
     });
     
-    // Raum löschen wenn leer
     if (room.players.length === 0) {
       console.log(`🗑️ Raum ${roomCode} gelöscht (leer)`);
       delete rooms[roomCode];
@@ -295,7 +249,6 @@ function startGame(roomCode) {
     settings: settings
   };
 
-  // WICHTIG: Zuerst den gameStarted Event senden
   broadcastToRoom(roomCode, { type: "startGame" });
   
   setTimeout(() => {
@@ -313,7 +266,7 @@ function startGame(roomCode) {
     }
   }, 1000);
 
-  // Rollen zuweisen
+  // 🔒 KRITISCHER SICHERHEITS-FIX: Rollen SICHER zuweisen
   setTimeout(() => {
     if (games[roomCode]) {
       const game = games[roomCode];
@@ -327,22 +280,27 @@ function startGame(roomCode) {
           
           const roleData = {
             type: "roleAssignment",
-            role: isImposter ? "imposter" : "crewmate",
-            word: isImposter ? null : game.secretWord
+            role: isImposter ? "imposter" : "crewmate"
+            // 🔒 SICHER: Kein "word" in der Basis-Nachricht!
           };
           
-          if (isImposter && game.settings.imposterHint && WORD_HINTS[game.secretWord]) {
-            roleData.hint = WORD_HINTS[game.secretWord];
+          // 🔒 SICHER: Wort NUR an Crewmates senden
+          if (!isImposter) {
+            roleData.word = game.secretWord;
+          }
+          
+          // 🔒 SICHER: Hinweis NUR an Imposter senden
+          if (isImposter && game.settings.imposterHint) {
+            roleData.hint = getWordHint(game.secretWord);
           }
           
           socket.send(JSON.stringify(roleData));
-          console.log(`🎭 Rolle zugewiesen an ${playerName}: ${roleData.role}`);
+          console.log(`🎭 Rolle zugewiesen an ${playerName}: ${roleData.role} ${isImposter ? '(mit Hinweis)' : '(mit Wort)'}`);
         }
       });
     }
   }, 1500);
 
-  // Timer für Runde
   if (settings.roundTimeLimit > 0) {
     setTimeout(() => {
       if (games[roomCode] && games[roomCode].phase === "playing") {
@@ -398,7 +356,6 @@ function nextPlayer(roomCode) {
     
     const sentCount = broadcastToGame(roomCode, gameStateMessage);
     
-    // WICHTIG: Falls niemand das Update erhalten hat, versuche es nochmal
     if (sentCount === 0) {
       console.log(`⚠️ Kein Spieler hat gameState erhalten - versuche erneut in 2 Sekunden`);
       setTimeout(() => {
@@ -627,17 +584,14 @@ wss.on("connection", (ws) => {
         const room = rooms[roomCode];
         const socketKey = getSocketKey(roomCode, playerName);
         
-        // WICHTIGER FIX: Bessere Socket-Verwaltung
         if (room.players.includes(playerName)) {
           console.log(`🔄 ${playerName} reconnected to room ${roomCode}`);
           const playerIndex = room.players.indexOf(playerName);
           
-          // Alte Socket-Referenz entfernen falls vorhanden
           if (room.sockets[playerIndex]) {
             console.log(`🗑️ Entferne alte Socket-Referenz für ${playerName}`);
           }
           
-          // Neue Socket setzen
           room.sockets[playerIndex] = ws;
           playerSockets[socketKey] = ws;
           
@@ -648,24 +602,21 @@ wss.on("connection", (ws) => {
           playerSockets[socketKey] = ws;
         }
         
-        // WebSocket-Metadaten setzen
         ws.playerInfo = { roomCode, name: playerName };
         ws.socketKey = socketKey;
 
-        // WICHTIG: Sofort bestätigen und Liste broadcasten
         ws.send(JSON.stringify({ 
           type: "roomInfo", 
           roomCode,
           gameSettings: room.gameSettings
         }));
         
-        // SOFORT die Spielerliste an alle senden
         setTimeout(() => {
           broadcastToRoom(roomCode, {
             type: "playerList",
             players: room.players
           });
-        }, 100); // Sehr kleine Verzögerung um sicherzustellen dass Socket bereit ist
+        }, 100);
       }
 
       else if (data.type === "updateGameSettings") {
@@ -753,7 +704,6 @@ wss.on("connection", (ws) => {
         if (game && game.players.includes(playerName)) {
           console.log(`🎮 ${playerName} ist dem laufenden Spiel in Raum ${roomCode} beigetreten`);
           
-          // Sofort Socket registrieren
           const socketKey = getSocketKey(roomCode, playerName);
           playerSockets[socketKey] = ws;
           ws.socketKey = socketKey;
@@ -776,12 +726,17 @@ wss.on("connection", (ws) => {
               
               const roleData = {
                 type: "roleAssignment",
-                role: isImposter ? "imposter" : "crewmate",
-                word: isImposter ? null : currentGame.secretWord
+                role: isImposter ? "imposter" : "crewmate"
               };
               
-              if (isImposter && currentGame.settings.imposterHint && WORD_HINTS[currentGame.secretWord]) {
-                roleData.hint = WORD_HINTS[currentGame.secretWord];
+              // 🔒 SICHER: Wort NUR an Crewmates senden
+              if (!isImposter) {
+                roleData.word = currentGame.secretWord;
+              }
+              
+              // 🔒 SICHER: Hinweis NUR an Imposter senden
+              if (isImposter && currentGame.settings.imposterHint) {
+                roleData.hint = getWordHint(currentGame.secretWord);
               }
               
               ws.send(JSON.stringify(roleData));
@@ -807,7 +762,7 @@ wss.on("connection", (ws) => {
         }
       }
 
-      // KRITISCHER FIX: submitWord Handler - Broadcasting Problem lösen
+      // 🔒 SICHER: submitWord Handler - nur Voice-Chat Marker
       else if (data.type === "submitWord") {
         const { roomCode, playerName, word } = data;
         const game = games[roomCode];
@@ -829,19 +784,18 @@ wss.on("connection", (ws) => {
 
         const trimmedWord = word.trim();
         
-        // WICHTIG: Erst ins Game-Array speichern
-        game.wordsSpoken.push({ player: playerName, word: trimmedWord });
+        // VOICE-ONLY: Speichere nur Marker, nicht das echte Wort
+        game.wordsSpoken.push({ player: playerName, word: "[VOICE_CHAT]" });
         
-        console.log(`💬 ${playerName} hat gesagt: "${trimmedWord}" - Broadcasting an alle...`);
+        console.log(`🎤 ${playerName} hat über Voice-Chat gesprochen - Broadcasting Marker...`);
 
-        // SOFORT Broadcasting - DAS IST DER WICHTIGSTE FIX!
+        // Broadcasting nur des Voice-Markers
         const wordMessage = {
           type: "wordSubmitted",
           player: playerName,
-          word: trimmedWord
+          word: "[VOICE_CHAT]"
         };
         
-        // Debug: Aktuelle Socket-Situation prüfen
         const room = rooms[roomCode];
         console.log(`🔍 Debug vor Broadcasting:`);
         console.log(`   Raum ${roomCode} hat ${room.players.length} Spieler: ${room.players.join(", ")}`);
@@ -853,27 +807,24 @@ wss.on("connection", (ws) => {
           console.log(`   ${player}: ${status}`);
         });
 
-        // Broadcasting mit detailliertem Logging
         const successCount = broadcastToGame(roomCode, wordMessage);
         
         console.log(`📊 Broadcasting Ergebnis: ${successCount}/${room.players.length} erfolgreich`);
         
-        // ZUSÄTZLICHER FIX: Falls Broadcasting fehlschlägt, sofort nochmal versuchen
         if (successCount < room.players.length) {
           console.log(`⚠️ Nicht alle Spieler haben das Wort erhalten - versuche erneut in 500ms`);
           setTimeout(() => {
-            console.log(`🔄 Retry Broadcasting für "${trimmedWord}" von ${playerName}`);
+            console.log(`🔄 Retry Broadcasting für Voice-Chat von ${playerName}`);
             broadcastToGame(roomCode, wordMessage);
           }, 500);
         }
 
-        // DANN den nächsten Spieler nach einer kleinen Verzögerung
         setTimeout(() => {
           if (games[roomCode]) {
             console.log(`⏭️ Wechsel zum nächsten Spieler in Raum ${roomCode}`);
             nextPlayer(roomCode);
           }
-        }, 1000); // Verkürzt von 1500ms auf 1000ms
+        }, 1000);
       }
 
       else if (data.type === "vote") {
@@ -939,7 +890,6 @@ wss.on("connection", (ws) => {
     }
   });
 
-  // ZUSÄTZLICHER FIX: Socket cleanup bei Disconnect verbessern
   ws.on("close", (code, reason) => {
     console.log(`🔴 Verbindung getrennt (Code: ${code}, Grund: ${reason})`);
     
@@ -952,14 +902,13 @@ wss.on("connection", (ws) => {
       const { roomCode, name } = ws.playerInfo;
       console.log(`👋 ${name} hat Raum ${roomCode} verlassen`);
       
-      // Verzögerter Cleanup um Reconnections zu ermöglichen
       setTimeout(() => {
         const socketKey = getSocketKey(roomCode, name);
         if (!playerSockets[socketKey]) {
           console.log(`⏰ ${name} hat sich nicht wieder verbunden - entferne aus Raum`);
           removePlayerFromRoom(roomCode, name);
         }
-      }, 10000); // 10 Sekunden Reconnection-Zeit
+      }, 10000);
     }
   });
 
@@ -976,7 +925,7 @@ wss.on("connection", (ws) => {
 // Status-Check alle 30 Sekunden
 setInterval(() => {
   Object.keys(rooms).forEach(roomCode => {
-    if (games[roomCode]) { // Nur für aktive Spiele
+    if (games[roomCode]) {
       debugSocketStatus(roomCode);
     }
   });
