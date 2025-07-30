@@ -71,7 +71,8 @@ function connectToServer() {
   roomCodeEl.textContent = "Verbinde mit Server...";
   roomCodeEl.classList.add("connecting");
   
-  socket = new WebSocket("ws://91.99.105.134:3000");
+  socket = new WebSocket("wss://theodd.one");
+
 
   // Button-Funktionalität direkt hier definieren
   const base = `${window.location.origin}${window.location.pathname}`;
