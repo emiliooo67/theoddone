@@ -90,12 +90,6 @@
       <button onclick="skipImposterGuess()" class="skip-btn">Noch nicht bereit</button>
     </div>
 
-    <!-- Wörter-Historie - ENTFERNT da keine Text-Eingabe -->
-    <!-- <div class="words-history">
-      <h3>Gesagte Wörter</h3>
-      <div id="wordsHistory" class="words-list"></div>
-    </div> -->
-
     <!-- Spielende -->
     <div id="gameEndArea" class="game-end" style="display:none;">
       <h2 id="gameResult">Spielende</h2>
@@ -173,22 +167,43 @@
       connectToServer();
     }
 
-    // VOICE-ONLY: Nächster Spieler Button
+    // VOICE-ONLY: Nächster Spieler Button - FIXED VERSION
     function nextPlayer() {
+      console.log("🎤 nextPlayer() aufgerufen - Voice-Chat Wort wurde gesagt");
+      
       if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.error("❌ Socket Problem:", socket ? socket.readyState : "null");
         showError("Keine Verbindung zum Server!");
         return;
       }
 
-      // Sende "Wort gesagt" Signal an Server (ohne tatsächliches Wort)
-      socket.send(JSON.stringify({
-        type: "nextPlayer",
-        roomCode: roomCode,
-        playerName: playerName
-      }));
+      if (!roomCode || !playerName) {
+        console.error("❌ Fehlende Daten:", { roomCode, playerName });
+        showError("Spielerdaten fehlen!");
+        return;
+      }
 
-      hideAllInputs();
-      showWaiting("Warte auf nächsten Spieler...");
+      console.log(`📤 Sende nextPlayer für ${playerName} in Raum ${roomCode}`);
+
+      // VERWENDE SUBMITWORD MIT VOICE MARKER - das funktioniert garantiert
+      const message = {
+        type: "submitWord",
+        roomCode: roomCode,
+        playerName: playerName,
+        word: "[VOICE_CHAT]" // Marker für über Voice gesagtes Wort
+      };
+
+      try {
+        socket.send(JSON.stringify(message));
+        console.log("✅ Voice-Chat nextPlayer Nachricht gesendet");
+        
+        hideAllInputs();
+        showWaiting("Warte auf nächsten Spieler...");
+        
+      } catch (error) {
+        console.error("❌ Fehler beim Senden:", error);
+        showError("Fehler beim Senden der Nachricht!");
+      }
     }
 
     function connectToServer() {
@@ -345,9 +360,9 @@
       updateGameDisplay();
       
       if (gameState.currentPlayer === playerName) {
+        console.log(`🎤 Du bist jetzt dran! Zeige Voice Game Area`);
         hideWaiting();
         showVoiceGameArea();
-        console.log(`Du bist jetzt dran!`);
       } else {
         if (gameState.phase === "playing") {
           showVoiceWaitingArea(gameState.currentPlayer);
@@ -455,18 +470,41 @@
           playerDiv.classList.add("self");
         }
         
+        const playerStatus = player === gameState.currentPlayer ? "🎤 Spricht..." : "👂 Hört zu...";
+        
         playerDiv.innerHTML = `
           <div class="player-name">${player}</div>
-          <div class="player-word">${player === gameState.currentPlayer ? "Spricht..." : "Wartet..."}</div>
+          <div class="player-word">${playerStatus}</div>
         `;
         
         playersListEl.appendChild(playerDiv);
       });
     }
 
+    // FIXED: Voice Game Area anzeigen
     function showVoiceGameArea() {
+      console.log("🎤 showVoiceGameArea() - Du bist dran!");
+      
       hideAllInputs();
-      voiceGameAreaEl.style.display = "block";
+      
+      const voiceArea = document.getElementById("voiceGameArea");
+      if (voiceArea) {
+        voiceArea.style.display = "block";
+        console.log("✅ Voice Game Area angezeigt");
+        
+        // Sicherstellen dass der Button da und klickbar ist
+        const nextBtn = voiceArea.querySelector(".next-player-btn");
+        if (nextBtn) {
+          console.log("✅ Next Player Button gefunden und funktional");
+          nextBtn.onclick = nextPlayer; // Event Handler setzen
+          nextBtn.style.display = "block";
+          nextBtn.style.visibility = "visible";
+        } else {
+          console.error("❌ Next Player Button nicht gefunden!");
+        }
+      } else {
+        console.error("❌ Voice Game Area Element nicht gefunden!");
+      }
     }
 
     function showVoiceWaitingArea(currentPlayer) {
@@ -569,7 +607,130 @@
       showSuccess("Vermutung abgegeben!");
     }
 
-    // Weitere Funktionen (selectVote, confirmVote, skipVote, etc.) bleiben gleich...
+    function showImposterVotingOptions() {
+      const imposterVotingDiv = document.createElement("div");
+      imposterVotingDiv.id = "imposterVotingOptions";
+      imposterVotingDiv.className = "imposter-voting";
+      imposterVotingDiv.innerHTML = `
+        <h3>Du bist der Imposter!</h3>
+        <p>Du kannst abstimmen, das Wort raten oder die Abstimmung überspringen:</p>
+        
+        <div class="imposter-actions">
+          <button onclick="showImposterVoting()" class="vote-btn" style="margin: 5px; width: auto; display: inline-block;">
+            Abstimmen
+          </button>
+          <button onclick="showImposterGuessInVoting()" class="guess-btn" style="margin: 5px; width: auto; display: inline-block;">
+            Wort raten
+          </button>
+          <button onclick="skipVote()" class="skip-btn" style="margin: 5px; width: auto; display: inline-block;">
+            ⏭Überspringen
+          </button>
+        </div>
+        
+        <div id="imposterVotingArea" style="display: none; margin-top: 20px;">
+          <h4>Wähle einen Spieler:</h4>
+          <div id="imposterVotingButtons" class="voting-buttons"></div>
+          <div class="voting-controls">
+            <button id="imposterConfirmVoteBtn" onclick="confirmVote()" class="confirm-btn" style="display:none;">
+              Stimme bestätigen
+            </button>
+            <button onclick="hideImposterVoting()" class="skip-btn">
+              Zurück
+            </button>
+          </div>
+        </div>
+        
+        <div id="imposterGuessInVotingArea" style="display: none; margin-top: 20px;">
+          <h4>Rate das geheime Wort:</h4>
+          <div class="input-group">
+            <input type="text" id="imposterVotingGuess" placeholder="Das geheime Wort ist..." maxlength="30" />
+            <button onclick="submitImposterVotingGuess()" class="guess-btn">Wort raten</button>
+            <button onclick="hideImposterGuess()" class="skip-btn">Zurück</button>
+          </div>
+        </div>
+      `;
+      
+      const gameStatus = document.querySelector(".game-status-header") || document.querySelector(".game-status");
+      if (gameStatus.nextSibling) {
+        gameStatus.parentNode.insertBefore(imposterVotingDiv, gameStatus.nextSibling);
+      } else {
+        gameStatus.parentNode.appendChild(imposterVotingDiv);
+      }
+    }
+
+    function showImposterVoting() {
+      document.querySelector(".imposter-actions").style.display = "none";
+      
+      const votingArea = document.getElementById("imposterVotingArea");
+      votingArea.style.display = "block";
+      
+      const votingButtons = document.getElementById("imposterVotingButtons");
+      votingButtons.innerHTML = "";
+      selectedVote = null;
+      document.getElementById("imposterConfirmVoteBtn").style.display = "none";
+      
+      gameState.players.forEach(player => {
+        if (player !== playerName) {
+          const button = document.createElement("button");
+          button.className = "vote-btn";
+          button.textContent = player;
+          button.onclick = () => selectImposterVote(player, button);
+          votingButtons.appendChild(button);
+        }
+      });
+    }
+
+    function selectImposterVote(player, buttonEl) {
+      document.querySelectorAll('#imposterVotingButtons .vote-btn').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      
+      buttonEl.classList.add('selected');
+      selectedVote = player;
+      document.getElementById("imposterConfirmVoteBtn").style.display = "inline-block";
+    }
+
+    function hideImposterVoting() {
+      document.querySelector(".imposter-actions").style.display = "block";
+      document.getElementById("imposterVotingArea").style.display = "none";
+      selectedVote = null;
+    }
+
+    function showImposterGuessInVoting() {
+      document.querySelector(".imposter-actions").style.display = "none";
+      
+      const guessArea = document.getElementById("imposterGuessInVotingArea");
+      guessArea.style.display = "block";
+      
+      document.getElementById("imposterVotingGuess").focus();
+    }
+
+    function hideImposterGuess() {
+      document.querySelector(".imposter-actions").style.display = "block";
+      document.getElementById("imposterGuessInVotingArea").style.display = "none";
+      document.getElementById("imposterVotingGuess").value = "";
+    }
+
+    function submitImposterVotingGuess() {
+      const guess = document.getElementById("imposterVotingGuess").value.trim();
+      
+      if (guess === "") {
+        showError("Bitte gib deine Vermutung ein!");
+        return;
+      }
+      
+      socket.send(JSON.stringify({
+        type: "imposterGuess",
+        roomCode: roomCode,
+        playerName: playerName,
+        guess: guess
+      }));
+      
+      document.getElementById("imposterVotingGuess").value = "";
+      hideAllInputs();
+      showWaiting("Vermutung abgegeben - warte auf Ergebnis...");
+    }
+
     function selectVote(player, buttonEl) {
       document.querySelectorAll('.vote-btn').forEach(btn => {
         btn.classList.remove('selected');
@@ -586,11 +747,6 @@
         return;
       }
       
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        showError("Keine Verbindung zum Server!");
-        return;
-      }
-      
       socket.send(JSON.stringify({
         type: "vote",
         roomCode: roomCode,
@@ -603,11 +759,6 @@
     }
 
     function skipVote() {
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        showError("Keine Verbindung zum Server!");
-        return;
-      }
-      
       socket.send(JSON.stringify({
         type: "skipVote",
         roomCode: roomCode,
@@ -625,11 +776,6 @@
         return;
       }
       
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        showError("Keine Verbindung zum Server!");
-        return;
-      }
-      
       socket.send(JSON.stringify({
         type: "imposterGuess",
         roomCode: roomCode,
@@ -643,11 +789,6 @@
     }
 
     function skipImposterGuess() {
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        showError("Keine Verbindung zum Server!");
-        return;
-      }
-      
       socket.send(JSON.stringify({
         type: "skipImposterGuess",
         roomCode: roomCode,
@@ -659,18 +800,12 @@
     }
 
     function playAgain() {
-      if (!socket || socket.readyState !== WebSocket.OPEN) {
-        showError("Keine Verbindung zum Server!");
-        return;
-      }
-      
       socket.send(JSON.stringify({
         type: "playAgain",
         roomCode: roomCode,
         playerName: playerName
       }));
       
-      // Reset local state
       currentRound = 1;
       myRole = null;
       isImposter = false;
@@ -690,6 +825,7 @@
       window.location.href = `lobby.html?room=${roomCode}&name=${encodeURIComponent(playerName)}`;
     }
 
+    // TOAST FUNKTIONEN
     function showError(message) {
       const toast = document.createElement("div");
       toast.className = "toast error";
@@ -765,19 +901,42 @@
       }, 5000);
     }
 
-    // Enter key support
+    // EVENT LISTENERS
     imposterGuessEl.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         submitImposterGuess();
       }
     });
 
-    // Cleanup bei Seitenverlass
+    document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('keypress', function(e) {
+        if (e.target && e.target.id === 'imposterVotingGuess' && e.key === 'Enter') {
+          submitImposterVotingGuess();
+        }
+      });
+    });
+
     window.addEventListener("beforeunload", () => {
       if (socket && socket.readyState === WebSocket.OPEN) {
         socket.close();
       }
     });
+
+    // CSS für Animationen
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    `;
+    document.head.appendChild(style);
   </script>
 </body>
 </html>

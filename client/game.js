@@ -70,7 +70,7 @@ function nextPlayer() {
 function connectToServer() {
   showWaiting("Verbinde mit dem Spiel...");
   
-  socket = new WebSocket("ws://91.99.105.134:3000");
+  socket = new WebSocket("wss://theodd.one/ws");
 
   socket.onopen = () => {
     console.log("Mit Game-Server verbunden");

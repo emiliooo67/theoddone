@@ -71,7 +71,7 @@ function connectToServer() {
   roomCodeEl.textContent = "Verbinde mit Server...";
   roomCodeEl.classList.add("connecting");
   
-  socket = new WebSocket("wss://theodd.one");
+  socket = new WebSocket("wss://theodd.one/ws");
 
 
   // Button-Funktionalität direkt hier definieren
