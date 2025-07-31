@@ -16,18 +16,8 @@
       <div class="logo"></div>
       <div class="room-info">
         <span id="roomCode">Raum: LOADING</span>
+        <span id="gamePhase">Verbinde...</span>
         <span id="playerName">Du: LOADING</span>
-      </div>
-    </div>
-
-    <!-- Game Status - NUR PHASE & RUNDE (xyz ist dran ENTFERNT) -->
-    <div class="game-status-header">
-      <div class="game-status-left">
-        <div id="gamePhase" class="phase-indicator">Spiel wird geladen...</div>
-        <div id="roundCounter" class="round-counter"></div>
-      </div>
-      <div class="game-status-right">
-        <div id="timeRemaining" class="time-remaining"></div>
       </div>
     </div>
 
@@ -116,7 +106,6 @@
   </div>
 
   <script>
-    // VOICE-ONLY GAME LOGIC - KOMPLETT ÜBERARBEITET
     const urlParams = new URLSearchParams(window.location.search);
     const playerName = urlParams.get("name")?.trim();
     const roomCode = urlParams.get("room");
@@ -125,7 +114,6 @@
     const roomCodeEl = document.getElementById("roomCode");
     const playerNameEl = document.getElementById("playerName");
     const gamePhaseEl = document.getElementById("gamePhase");
-    const roundCounterEl = document.getElementById("roundCounter");
     const wordDisplayEl = document.getElementById("wordDisplay");
     const roleTitleEl = document.getElementById("roleTitle");
     const wordTextEl = document.getElementById("wordText");
@@ -165,23 +153,53 @@
       connectToServer();
     }
 
-    // VOICE-ONLY: Nächster Spieler Button
+    // BUGFIX: updateGameDisplay Funktion - Spielphase in Header
+    function updateGameDisplay() {
+      if (!gameState.players) return;
+      
+      // BUG 3 FIX: Spielphase in Header anzeigen
+      const roomInfo = document.querySelector('.game-header .room-info');
+      if (roomInfo && gameState.phase) {
+        let phaseText = gameState.phase === "playing" ? "SPIELPHASE" : "ABSTIMMUNG";
+        let roundText = `RUNDE ${gameState.round || 1}`;
+        let rightText = `DU: ${playerName}`;
+        
+        // Bei Zeit-Limit die Zeit anzeigen
+        if (gameState.timeRemaining !== null && gameState.timeRemaining !== undefined && gameState.timeRemaining > 0) {
+          const minutes = Math.floor(gameState.timeRemaining / 60);
+          const seconds = gameState.timeRemaining % 60;
+          rightText = `${minutes}:${seconds.toString().padStart(2, '0')} MIN`;
+        }
+        
+        roomInfo.innerHTML = `
+          <span>RAUM: ${roomCode}</span>
+          <span style="color: #C42000; font-weight: 700;">${phaseText} ${roundText}</span>
+          <span>${rightText}</span>
+        `;
+      }
+      
+      updatePlayersList();
+    }
+
+    // BUGFIX: nextPlayer - Bessere Fehlerbehandlung und Button-Deaktivierung
     function nextPlayer() {
-      console.log("FERTIG Button gedrückt - Voice-Chat Wort wurde gesagt");
+      console.log("🎤 FERTIG Button gedrückt");
+      
+      const nextBtn = document.querySelector(".next-player-btn");
+      if (nextBtn) {
+        nextBtn.disabled = true;
+        nextBtn.textContent = "GESENDET...";
+      }
       
       if (!socket || socket.readyState !== WebSocket.OPEN) {
-        console.error("Socket Problem:", socket ? socket.readyState : "null");
+        console.error("❌ Socket Problem");
         showError("Keine Verbindung zum Server!");
+        if (nextBtn) {
+          nextBtn.disabled = false;
+          nextBtn.textContent = "FERTIG - NÄCHSTER SPIELER";
+        }
         return;
       }
-
-      if (!roomCode || !playerName) {
-        console.error("Fehlende Daten:", { roomCode, playerName });
-        showError("Spielerdaten fehlen!");
-        return;
-      }
-
-      console.log(`Sende nextPlayer für ${playerName} in Raum ${roomCode}`);
 
       const message = {
         type: "submitWord",
@@ -192,14 +210,22 @@
 
       try {
         socket.send(JSON.stringify(message));
-        console.log("Voice-Chat nextPlayer Nachricht gesendet");
+        console.log("✅ Voice-Chat Nachricht gesendet");
         
-        hideAllInputs();
-        showWaiting("Warte auf nächsten Spieler...");
+        // Nach 1 Sekunde automatisch verstecken
+        setTimeout(() => {
+          hideAllInputs();
+          showWaiting("Warte auf nächsten Spieler...");
+        }, 1000);
         
       } catch (error) {
-        console.error("Fehler beim Senden:", error);
-        showError("Fehler beim Senden der Nachricht!");
+        console.error("❌ Fehler beim Senden:", error);
+        showError("Fehler beim Senden!");
+        
+        if (nextBtn) {
+          nextBtn.disabled = false;
+          nextBtn.textContent = "FERTIG - NÄCHSTER SPIELER";
+        }
       }
     }
 
@@ -381,8 +407,6 @@
     }
 
     function handleVotingPhase(data) {
-      gamePhaseEl.textContent = "Abstimmungsphase";
-      
       hideAllInputs();
       
       if (isImposter) {
@@ -427,25 +451,6 @@
       }
     }
 
-    function updateGameDisplay() {
-      if (!gameState.players) return;
-      
-      if (gameState.phase === "playing") {
-        gamePhaseEl.textContent = "Spielphase";
-        
-        if (gameState.timeRemaining !== null && gameState.timeRemaining !== undefined) {
-          const minutes = Math.floor(gameState.timeRemaining / 60);
-          const seconds = gameState.timeRemaining % 60;
-          document.getElementById("timeRemaining").textContent = `${minutes}:${seconds.toString().padStart(2, '0')} verbleibend`;
-        }
-      } else if (gameState.phase === "voting") {
-        gamePhaseEl.textContent = "Abstimmungsphase";
-      }
-      
-      roundCounterEl.textContent = `Runde ${gameState.round || 1}`;
-      updatePlayersList();
-    }
-
     function updatePlayersList() {
       if (!playersListEl || !gameState.players) return;
       
@@ -474,8 +479,9 @@
       });
     }
 
+    // BUGFIX: Voice Game Area - Bessere Fehlerbehandlung
     function showVoiceGameArea() {
-      console.log("showVoiceGameArea() - Du bist dran!");
+      console.log("🎤 showVoiceGameArea() - Du bist dran!");
       
       hideAllInputs();
       
@@ -484,21 +490,18 @@
         voiceArea.style.display = "block";
         voiceArea.style.visibility = "visible";
         voiceArea.style.opacity = "1";
-        console.log("Voice Game Area angezeigt");
         
         const nextBtn = voiceArea.querySelector(".next-player-btn");
         if (nextBtn) {
-          console.log("FERTIG Button gefunden und funktional");
+          // Button Status zurücksetzen
+          nextBtn.disabled = false;
+          nextBtn.textContent = "FERTIG - NÄCHSTER SPIELER";
           nextBtn.onclick = nextPlayer;
           nextBtn.style.display = "block";
           nextBtn.style.visibility = "visible";
           nextBtn.style.opacity = "1";
-          nextBtn.style.zIndex = "999";
-        } else {
-          console.error("FERTIG Button nicht gefunden!");
+          console.log("✅ FERTIG Button bereit");
         }
-      } else {
-        console.error("Voice Game Area Element nicht gefunden!");
       }
     }
 
@@ -609,37 +612,22 @@
       showSuccess("Vermutung abgegeben!");
     }
 
+    // BUGFIX: Imposter Voting Options - NUR Wort raten und Überspringen
     function showImposterVotingOptions() {
       const imposterVotingDiv = document.createElement("div");
       imposterVotingDiv.id = "imposterVotingOptions";
       imposterVotingDiv.className = "imposter-voting";
       imposterVotingDiv.innerHTML = `
         <h3>Du bist der Imposter!</h3>
-        <p>Du kannst abstimmen, das Wort raten oder die Abstimmung überspringen:</p>
+        <p>Du kannst das geheime Wort raten oder die Abstimmung überspringen:</p>
         
         <div class="imposter-actions">
-          <button onclick="showImposterVoting()" class="vote-btn">
-            Abstimmen
-          </button>
           <button onclick="showImposterGuessInVoting()" class="guess-btn">
             Wort raten
           </button>
           <button onclick="skipVote()" class="skip-btn">
             Überspringen
           </button>
-        </div>
-        
-        <div id="imposterVotingArea" style="display: none; margin-top: 20px;">
-          <h4>Wähle einen Spieler:</h4>
-          <div id="imposterVotingButtons" class="voting-buttons"></div>
-          <div class="voting-controls">
-            <button id="imposterConfirmVoteBtn" onclick="confirmVote()" class="confirm-btn" style="display:none;">
-              Stimme bestätigen
-            </button>
-            <button onclick="hideImposterVoting()" class="skip-btn">
-              Zurück
-            </button>
-          </div>
         </div>
         
         <div id="imposterGuessInVotingArea" style="display: none; margin-top: 20px;">
@@ -652,50 +640,10 @@
         </div>
       `;
       
-      const gameStatus = document.querySelector(".game-status-header") || document.querySelector(".game-status");
-      if (gameStatus.nextSibling) {
-        gameStatus.parentNode.insertBefore(imposterVotingDiv, gameStatus.nextSibling);
-      } else {
-        gameStatus.parentNode.appendChild(imposterVotingDiv);
+      const gameContainer = document.querySelector('.game-container');
+      if (gameContainer) {
+        gameContainer.appendChild(imposterVotingDiv);
       }
-    }
-
-    function showImposterVoting() {
-      document.querySelector(".imposter-actions").style.display = "none";
-      
-      const votingArea = document.getElementById("imposterVotingArea");
-      votingArea.style.display = "block";
-      
-      const votingButtons = document.getElementById("imposterVotingButtons");
-      votingButtons.innerHTML = "";
-      selectedVote = null;
-      document.getElementById("imposterConfirmVoteBtn").style.display = "none";
-      
-      gameState.players.forEach(player => {
-        if (player !== playerName) {
-          const button = document.createElement("button");
-          button.className = "vote-btn";
-          button.textContent = player;
-          button.onclick = () => selectImposterVote(player, button);
-          votingButtons.appendChild(button);
-        }
-      });
-    }
-
-    function selectImposterVote(player, buttonEl) {
-      document.querySelectorAll('#imposterVotingButtons .vote-btn').forEach(btn => {
-        btn.classList.remove('selected');
-      });
-      
-      buttonEl.classList.add('selected');
-      selectedVote = player;
-      document.getElementById("imposterConfirmVoteBtn").style.display = "inline-block";
-    }
-
-    function hideImposterVoting() {
-      document.querySelector(".imposter-actions").style.display = "block";
-      document.getElementById("imposterVotingArea").style.display = "none";
-      selectedVote = null;
     }
 
     function showImposterGuessInVoting() {
