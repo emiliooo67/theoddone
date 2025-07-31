@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TheOddOne – Spiel</title>
-  <link rel="icon" type="image/png" href="root/theoddone/assets/logo.png">
+  <link rel="icon" type="image/png" href="/assets/logo.png">
   <link rel="stylesheet" href="main.css">
 </head>
 <body>
   <div class="game-container">
     <a href="lobby.html" class="exit-btn" onclick="return confirm('Spiel wirklich verlassen?')">Spiel verlassen</a>
     
-    <!-- Header -->
+    <!-- Header - KOMPAKTER -->
     <div class="game-header">
       <div class="logo"></div>
       <div class="room-info">
@@ -20,19 +20,18 @@
       </div>
     </div>
 
-    <!-- Spielstatus - AUFGETEILT IN ZWEI SPALTEN -->
+    <!-- Game Status - NUR PHASE & RUNDE (xyz ist dran ENTFERNT) -->
     <div class="game-status-header">
       <div class="game-status-left">
         <div id="gamePhase" class="phase-indicator">Spiel wird geladen...</div>
         <div id="roundCounter" class="round-counter"></div>
       </div>
       <div class="game-status-right">
-        <div id="currentPlayer" class="current-player"></div>
         <div id="timeRemaining" class="time-remaining"></div>
       </div>
     </div>
 
-    <!-- Wort/Rolle anzeigen -->
+    <!-- Word Display - SCHMALER -->
     <div id="wordDisplay" class="word-display" style="display:none;">
       <div class="role-card">
         <h2 id="roleTitle">Deine Rolle</h2>
@@ -41,19 +40,19 @@
       </div>
     </div>
 
-    <!-- Voice-Only Spielbereich - ERSETZT TEXT INPUT -->
+    <!-- Voice Game Area -->
     <div id="voiceGameArea" class="voice-game-area" style="display:none;">
       <h3>Du bist dran!</h3>
       <div class="voice-instructions">
-        <h4>🎤 Voice-Chat Anweisung</h4>
+        <h4>Voice-Chat Anweisung</h4>
         <p>Sage jetzt über Discord/Voice-Chat ein Wort, das zu deinem Begriff passt. Klicke dann auf "Fertig", wenn du dein Wort gesagt hast.</p>
       </div>
-      <button onclick="nextPlayer()" class="next-player-btn" style="background: #000000 !important; color: white !important; padding: 20px !important; font-size: 18px !important; border: none !important; border-radius: 12px !important; width: 100% !important; cursor: pointer !important; margin-top: 20px !important;">FERTIG - NÄCHSTER SPIELER</button>
+      <button onclick="nextPlayer()" class="next-player-btn">FERTIG - NÄCHSTER SPIELER</button>
     </div>
 
-    <!-- Warteanzeige für andere Spieler -->
+    <!-- Voice Waiting Area -->
     <div id="voiceWaitingArea" class="voice-game-area" style="display:none;">
-      <h3>🎧 Hör zu!</h3>
+      <h3>Hör zu!</h3>
       <div class="voice-instructions">
         <h4>Der aktuelle Spieler spricht</h4>
         <p><strong id="currentSpeaker">Spieler</strong> ist dran und sagt jetzt ein Wort über Voice-Chat. Höre aufmerksam zu!</p>
@@ -62,13 +61,13 @@
       <p>Warte auf nächsten Spieler...</p>
     </div>
 
-    <!-- Spielerliste -->
+    <!-- Players Section - KOMPAKTER -->
     <div class="players-section">
       <h3>Spieler</h3>
       <div id="playersList" class="players-grid"></div>
     </div>
 
-    <!-- Abstimmungsbereich -->
+    <!-- Voting Area -->
     <div id="votingArea" class="voting-area" style="display:none;">
       <h3 id="votingTitle">Abstimmung</h3>
       <p id="votingDescription">Wähle den Spieler, von dem du denkst, dass er der Imposter ist:</p>
@@ -90,7 +89,7 @@
       <button onclick="skipImposterGuess()" class="skip-btn">Noch nicht bereit</button>
     </div>
 
-    <!-- Spielende -->
+    <!-- Game End -->
     <div id="gameEndArea" class="game-end" style="display:none;">
       <h2 id="gameResult">Spielende</h2>
       <div id="gameEndDetails"></div>
@@ -100,13 +99,13 @@
       </div>
     </div>
 
-    <!-- Warteanzeige -->
+    <!-- Waiting Area -->
     <div id="waitingArea" class="waiting-area">
       <div class="spinner"></div>
       <p id="waitingText">Warte auf andere Spieler...</p>
     </div>
 
-    <!-- Footer mit Links -->
+    <!-- Footer -->
     <div class="footer-links">
       <p>
         <a href="impressum.html">Impressum</a> | 
@@ -126,7 +125,6 @@
     const roomCodeEl = document.getElementById("roomCode");
     const playerNameEl = document.getElementById("playerName");
     const gamePhaseEl = document.getElementById("gamePhase");
-    const currentPlayerEl = document.getElementById("currentPlayer");
     const roundCounterEl = document.getElementById("roundCounter");
     const wordDisplayEl = document.getElementById("wordDisplay");
     const roleTitleEl = document.getElementById("roleTitle");
@@ -167,41 +165,40 @@
       connectToServer();
     }
 
-    // VOICE-ONLY: Nächster Spieler Button - FUNKTIONIERT GARANTIERT
+    // VOICE-ONLY: Nächster Spieler Button
     function nextPlayer() {
-      console.log("🎤 FERTIG Button gedrückt - Voice-Chat Wort wurde gesagt");
+      console.log("FERTIG Button gedrückt - Voice-Chat Wort wurde gesagt");
       
       if (!socket || socket.readyState !== WebSocket.OPEN) {
-        console.error("❌ Socket Problem:", socket ? socket.readyState : "null");
+        console.error("Socket Problem:", socket ? socket.readyState : "null");
         showError("Keine Verbindung zum Server!");
         return;
       }
 
       if (!roomCode || !playerName) {
-        console.error("❌ Fehlende Daten:", { roomCode, playerName });
+        console.error("Fehlende Daten:", { roomCode, playerName });
         showError("Spielerdaten fehlen!");
         return;
       }
 
-      console.log(`📤 Sende nextPlayer für ${playerName} in Raum ${roomCode}`);
+      console.log(`Sende nextPlayer für ${playerName} in Raum ${roomCode}`);
 
-      // VERWENDE SUBMITWORD MIT VOICE MARKER - das funktioniert garantiert
       const message = {
         type: "submitWord",
         roomCode: roomCode,
         playerName: playerName,
-        word: "[VOICE_CHAT]" // Marker für über Voice gesagtes Wort
+        word: "[VOICE_CHAT]"
       };
 
       try {
         socket.send(JSON.stringify(message));
-        console.log("✅ Voice-Chat nextPlayer Nachricht gesendet");
+        console.log("Voice-Chat nextPlayer Nachricht gesendet");
         
         hideAllInputs();
         showWaiting("Warte auf nächsten Spieler...");
         
       } catch (error) {
-        console.error("❌ Fehler beim Senden:", error);
+        console.error("Fehler beim Senden:", error);
         showError("Fehler beim Senden der Nachricht!");
       }
     }
@@ -354,13 +351,11 @@
     function handleGameStateUpdate(data) {
       console.log(`Game State Update erhalten:`, data.gameState);
       
-      const oldCurrentPlayer = gameState.currentPlayer;
       gameState = data.gameState;
-      
       updateGameDisplay();
       
       if (gameState.currentPlayer === playerName) {
-        console.log(`🎤 Du bist jetzt dran! Zeige Voice Game Area`);
+        console.log(`Du bist jetzt dran! Zeige Voice Game Area`);
         hideWaiting();
         showVoiceGameArea();
       } else {
@@ -387,7 +382,6 @@
 
     function handleVotingPhase(data) {
       gamePhaseEl.textContent = "Abstimmungsphase";
-      currentPlayerEl.textContent = data.forced ? "Zeit abgelaufen - ZWANGSABSTIMMUNG!" : "Abstimmen oder überspringen";
       
       hideAllInputs();
       
@@ -438,12 +432,11 @@
       
       if (gameState.phase === "playing") {
         gamePhaseEl.textContent = "Spielphase";
-        currentPlayerEl.textContent = `${gameState.currentPlayer} ist dran`;
         
         if (gameState.timeRemaining !== null && gameState.timeRemaining !== undefined) {
           const minutes = Math.floor(gameState.timeRemaining / 60);
           const seconds = gameState.timeRemaining % 60;
-          currentPlayerEl.textContent += ` (${minutes}:${seconds.toString().padStart(2, '0')} verbleibend)`;
+          document.getElementById("timeRemaining").textContent = `${minutes}:${seconds.toString().padStart(2, '0')} verbleibend`;
         }
       } else if (gameState.phase === "voting") {
         gamePhaseEl.textContent = "Abstimmungsphase";
@@ -470,7 +463,7 @@
           playerDiv.classList.add("self");
         }
         
-        const playerStatus = player === gameState.currentPlayer ? "🎤 Spricht..." : "👂 Hört zu...";
+        const playerStatus = player === gameState.currentPlayer ? "Spricht..." : "Hört zu...";
         
         playerDiv.innerHTML = `
           <div class="player-name">${player}</div>
@@ -481,9 +474,8 @@
       });
     }
 
-    // FIXED: Voice Game Area anzeigen - GARANTIERT SICHTBAR
     function showVoiceGameArea() {
-      console.log("🎤 showVoiceGameArea() - Du bist dran!");
+      console.log("showVoiceGameArea() - Du bist dran!");
       
       hideAllInputs();
       
@@ -492,22 +484,21 @@
         voiceArea.style.display = "block";
         voiceArea.style.visibility = "visible";
         voiceArea.style.opacity = "1";
-        console.log("✅ Voice Game Area ZWANGSWEISE angezeigt");
+        console.log("Voice Game Area angezeigt");
         
-        // Button extra sichtbar machen
         const nextBtn = voiceArea.querySelector(".next-player-btn");
         if (nextBtn) {
-          console.log("✅ FERTIG Button gefunden und funktional");
-          nextBtn.onclick = nextPlayer; // Event Handler setzen
+          console.log("FERTIG Button gefunden und funktional");
+          nextBtn.onclick = nextPlayer;
           nextBtn.style.display = "block";
           nextBtn.style.visibility = "visible";
           nextBtn.style.opacity = "1";
           nextBtn.style.zIndex = "999";
         } else {
-          console.error("❌ FERTIG Button nicht gefunden!");
+          console.error("FERTIG Button nicht gefunden!");
         }
       } else {
-        console.error("❌ Voice Game Area Element nicht gefunden!");
+        console.error("Voice Game Area Element nicht gefunden!");
       }
     }
 
@@ -557,16 +548,17 @@
       waitingAreaEl.style.display = "none";
     }
 
+    // FLOATING IMPOSTER GUESS - MIT TOGGLE FUNKTION
     function setupPermanentImposterGuess() {
       const floatingGuess = document.createElement("div");
       floatingGuess.id = "floatingImposterGuess";
       floatingGuess.className = "floating-imposter-guess";
       floatingGuess.innerHTML = `
         <div class="floating-content">
+          <button onclick="toggleFloatingGuess()" class="minimize-btn">−</button>
           <h4>Imposter Guess</h4>
           <input type="text" id="floatingGuessInput" placeholder="Das geheime Wort ist..." maxlength="30" />
           <button onclick="submitFloatingGuess()" class="guess-btn">Wort raten</button>
-          <button onclick="toggleFloatingGuess()" class="minimize-btn">−</button>
         </div>
       `;
       
@@ -583,6 +575,12 @@
       const floating = document.getElementById("floatingImposterGuess");
       if (floating) {
         floating.classList.toggle("minimized");
+        const btn = floating.querySelector(".minimize-btn");
+        if (floating.classList.contains("minimized")) {
+          btn.textContent = "+";
+        } else {
+          btn.textContent = "−";
+        }
       }
     }
 
@@ -620,14 +618,14 @@
         <p>Du kannst abstimmen, das Wort raten oder die Abstimmung überspringen:</p>
         
         <div class="imposter-actions">
-          <button onclick="showImposterVoting()" class="vote-btn" style="margin: 5px; width: auto; display: inline-block;">
+          <button onclick="showImposterVoting()" class="vote-btn">
             Abstimmen
           </button>
-          <button onclick="showImposterGuessInVoting()" class="guess-btn" style="margin: 5px; width: auto; display: inline-block;">
+          <button onclick="showImposterGuessInVoting()" class="guess-btn">
             Wort raten
           </button>
-          <button onclick="skipVote()" class="skip-btn" style="margin: 5px; width: auto; display: inline-block;">
-            ⏭Überspringen
+          <button onclick="skipVote()" class="skip-btn">
+            Überspringen
           </button>
         </div>
         
@@ -838,14 +836,18 @@
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #C42000;
-        color: white;
+        background: linear-gradient(135deg, #C42000 0%, #8B0000 100%);
+        color: #FFFFFF;
         padding: 12px 20px;
-        border-radius: 8px;
+        border-radius: 12px;
+        border: 3px solid #000000;
         z-index: 1000;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-weight: 500;
+        box-shadow: 3px 3px 0px #000000;
+        animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 12px;
       `;
       
       document.body.appendChild(toast);
@@ -863,14 +865,18 @@
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #000000;
-        color: white;
+        background: linear-gradient(135deg, #000000 0%, #333333 100%);
+        color: #FFFFFF;
         padding: 12px 20px;
-        border-radius: 8px;
+        border-radius: 12px;
+        border: 3px solid #000000;
         z-index: 1000;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-weight: 500;
+        box-shadow: 3px 3px 0px #000000;
+        animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 12px;
       `;
       
       document.body.appendChild(toast);
@@ -888,14 +894,18 @@
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #616161;
-        color: white;
+        background: linear-gradient(135deg, #616161 0%, #4D4D4D 100%);
+        color: #FFFFFF;
         padding: 12px 20px;
-        border-radius: 8px;
+        border-radius: 12px;
+        border: 3px solid #000000;
         z-index: 1000;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        font-weight: 500;
+        box-shadow: 3px 3px 0px #000000;
+        animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 12px;
       `;
       
       document.body.appendChild(toast);
@@ -929,25 +939,25 @@
     // CSS für Animationen
     const style = document.createElement('style');
     style.textContent = `
-      @keyframes slideIn {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
+      @keyframes slideInRight {
+        from { 
+          transform: translateX(100%) rotate(5deg); 
+          opacity: 0; 
         }
-        to {
-          transform: translateX(0);
-          opacity: 1;
+        to { 
+          transform: translateX(0) rotate(0deg); 
+          opacity: 1; 
         }
       }
     `;
-      document.head.appendChild(style);
+    document.head.appendChild(style);
 
-    // FIX
+    // Auto-Fix für Voice Game Area
     setInterval(() => {
       if (gameState.currentPlayer === playerName && 
           document.getElementById("voiceGameArea").style.display === "none" &&
           gameState.phase === "playing") {
-        console.log("🔧 Auto-Fix: Zeige Voice Game Area für", playerName);
+        console.log("Auto-Fix: Zeige Voice Game Area für", playerName);
         showVoiceGameArea();
       }
     }, 1000); 
