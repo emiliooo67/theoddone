@@ -211,6 +211,46 @@ function isValidRoomCode(roomCode) {
   return roomCode && typeof roomCode === 'string' && roomCode.trim().length > 0;
 }
 
+// 🔥 TIMER FIX: Synchroner Timer für alle Clients
+function startRoundTimer(roomCode) {
+  const game = games[roomCode];
+  if (!game || game.settings.roundTimeLimit === 0) return;
+
+  console.log(`⏰ Starte Timer für ${game.settings.roundTimeLimit} Sekunden in Raum ${roomCode}`);
+  
+  // Setze Start-Zeit
+  game.roundStartTime = Date.now();
+  game.roundEndTime = Date.now() + (game.settings.roundTimeLimit * 1000);
+  
+  // Sende Timer-Update alle Sekunde
+  const timerInterval = setInterval(() => {
+    if (!games[roomCode] || games[roomCode].phase !== "playing") {
+      clearInterval(timerInterval);
+      return;
+    }
+    
+    const now = Date.now();
+    const timeRemaining = Math.max(0, Math.ceil((game.roundEndTime - now) / 1000));
+    
+    // Update für alle Clients
+    broadcastToGame(roomCode, {
+      type: "timerUpdate",
+      timeRemaining: timeRemaining,
+      totalTime: game.settings.roundTimeLimit
+    });
+    
+    // Zeit abgelaufen
+    if (timeRemaining === 0) {
+      clearInterval(timerInterval);
+      console.log(`⏰ Zeitlimit erreicht in Raum ${roomCode} - zwinge Abstimmung`);
+      startVotingPhase(roomCode, true);
+    }
+  }, 1000);
+  
+  // Speichere Interval-ID für Cleanup
+  game.timerInterval = timerInterval;
+}
+
 function startGame(roomCode) {
   const room = rooms[roomCode];
   if (!room || room.players.length < 3) {
@@ -232,6 +272,7 @@ function startGame(roomCode) {
   console.log(`   Geheimes Wort: ${secretWord}`);
   console.log(`   Imposter(s): ${imposters.join(", ")} (${actualImposterCount}/${room.players.length})`);
   console.log(`   Spieler: ${room.players.join(", ")}`);
+  console.log(`   Timer: ${settings.roundTimeLimit} Sekunden`);
 
   games[roomCode] = {
     players: [...room.players],
@@ -246,6 +287,8 @@ function startGame(roomCode) {
     playersReady: new Set(),
     startTime: Date.now(),
     roundStartTime: Date.now(),
+    roundEndTime: null,
+    timerInterval: null,
     settings: settings
   };
 
@@ -281,7 +324,6 @@ function startGame(roomCode) {
           const roleData = {
             type: "roleAssignment",
             role: isImposter ? "imposter" : "crewmate"
-            // 🔒 SICHER: Kein "word" in der Basis-Nachricht!
           };
           
           // 🔒 SICHER: Wort NUR an Crewmates senden
@@ -298,17 +340,13 @@ function startGame(roomCode) {
           console.log(`🎭 Rolle zugewiesen an ${playerName}: ${roleData.role} ${isImposter ? '(mit Hinweis)' : '(mit Wort)'}`);
         }
       });
+      
+      // 🔥 TIMER FIX: Starte synchronen Timer
+      if (game.settings.roundTimeLimit > 0) {
+        startRoundTimer(roomCode);
+      }
     }
   }, 1500);
-
-  if (settings.roundTimeLimit > 0) {
-    setTimeout(() => {
-      if (games[roomCode] && games[roomCode].phase === "playing") {
-        console.log(`⏰ Zeitlimit erreicht in Raum ${roomCode} - zwinge Abstimmung`);
-        startVotingPhase(roomCode, true);
-      }
-    }, settings.roundTimeLimit * 1000);
-  }
 
   return true;
 }
@@ -332,18 +370,21 @@ function nextPlayer(roomCode) {
   if (game.currentPlayerIndex === 0) {
     game.round++;
     
-    const timeElapsed = (Date.now() - game.roundStartTime) / 1000;
-    if (game.settings.roundTimeLimit > 0 && timeElapsed >= game.settings.roundTimeLimit) {
-      console.log(`⏰ Zeitlimit erreicht - zwinge Abstimmung in Raum ${roomCode}`);
-      startVotingPhase(roomCode, true);
-    } else {
-      console.log(`🔄 Runde ${game.round} beendet - Abstimmungsphase verfügbar`);
-      startVotingPhase(roomCode, false);
+    // Stop Timer
+    if (game.timerInterval) {
+      clearInterval(game.timerInterval);
+      game.timerInterval = null;
     }
+    
+    console.log(`🔄 Runde ${game.round} beendet - Abstimmungsphase verfügbar`);
+    startVotingPhase(roomCode, false);
   } else {
     // BUG FIX: Für normale Spielerwechsel sende nextPlayerTurn statt gameState
+    const now = Date.now();
+    const timeRemaining = game.roundEndTime ? Math.max(0, Math.ceil((game.roundEndTime - now) / 1000)) : null;
+    
     const nextPlayerMessage = {
-      type: "nextPlayerTurn", // Spezifischer Message-Type
+      type: "nextPlayerTurn",
       currentPlayer: game.currentPlayer,
       currentPlayerIndex: game.currentPlayerIndex,
       gameState: {
@@ -351,8 +392,7 @@ function nextPlayer(roomCode) {
         currentPlayer: game.currentPlayer,
         round: game.round,
         phase: game.phase,
-        timeRemaining: game.settings.roundTimeLimit > 0 ? 
-          Math.max(0, game.settings.roundTimeLimit - Math.floor((Date.now() - game.roundStartTime) / 1000)) : null
+        timeRemaining: timeRemaining
       }
     };
 
@@ -376,6 +416,12 @@ function nextPlayer(roomCode) {
 function startVotingPhase(roomCode, forced = false) {
   const game = games[roomCode];
   if (!game) return;
+
+  // Stop Timer
+  if (game.timerInterval) {
+    clearInterval(game.timerInterval);
+    game.timerInterval = null;
+  }
 
   game.phase = "voting";
   game.votes = {};
@@ -417,6 +463,7 @@ function skipVote(roomCode, player) {
   checkVotingComplete(roomCode);
 }
 
+// 🔥 NEW: Imposter Last Chance Feature
 function checkVotingComplete(roomCode) {
   const game = games[roomCode];
   if (!game) return;
@@ -434,23 +481,58 @@ function checkVotingComplete(roomCode) {
 
     if (maxVotes > 0 && eliminatedPlayers.length === 1) {
       const eliminated = eliminatedPlayers[0];
+      
+      // 🔥 NEW: Imposter Last Chance Feature
       if (game.imposters.includes(eliminated)) {
-        const remainingImposters = game.imposters.filter(imp => imp !== eliminated);
-        if (remainingImposters.length === 0) {
-          endGame(roomCode, "crewmates", `Crewmates haben gewonnen! Alle Imposter wurden eliminiert.`);
-        } else {
-          game.imposters = remainingImposters;
-          game.players = game.players.filter(p => p !== eliminated);
-          continueGameAfterElimination(roomCode, eliminated, false);
-        }
+        console.log(`🕵️ Imposter ${eliminated} wurde gewählt - gebe letzte Chance zum Raten`);
+        
+        // Starte "Last Chance" Phase
+        game.phase = "imposterLastChance";
+        game.eliminatedImposter = eliminated;
+        game.playersReady.clear();
+        
+        broadcastToGame(roomCode, {
+          type: "imposterLastChance",
+          eliminatedImposter: eliminated,
+          gameState: {
+            players: game.players,
+            currentPlayer: null,
+            round: game.round,
+            phase: game.phase
+          }
+        });
+        
+        // Timeout für letzte Chance (30 Sekunden)
+        setTimeout(() => {
+          if (games[roomCode] && games[roomCode].phase === "imposterLastChance") {
+            console.log(`⏰ Imposter ${eliminated} hat Zeit überschritten - Crewmates gewinnen`);
+            
+            // Imposter aus Spiel entfernen
+            const remainingImposters = game.imposters.filter(imp => imp !== eliminated);
+            if (remainingImposters.length === 0) {
+              endGame(roomCode, "crewmates", `Crewmates haben gewonnen! Imposter ${eliminated} wurde eliminiert und konnte das Wort nicht erraten.`);
+            } else {
+              game.imposters = remainingImposters;
+              game.players = game.players.filter(p => p !== eliminated);
+              continueGameAfterElimination(roomCode, eliminated, false);
+            }
+          }
+        }, 30000); // 30 Sekunden Zeit
+        
       } else {
+        // Crewmate wurde eliminiert - Imposter gewinnen sofort
         endGame(roomCode, "imposter", `Imposter haben gewonnen! Ein unschuldiger Crewmate (${eliminated}) wurde eliminiert.`);
       }
     } else {
+      // Keine Elimination oder Unentschieden
       game.phase = "playing";
       game.currentPlayerIndex = 0;
       game.currentPlayer = game.players[0];
-      game.roundStartTime = Date.now();
+      
+      // 🔥 TIMER FIX: Starte neuen Timer für nächste Runde
+      if (game.settings.roundTimeLimit > 0) {
+        startRoundTimer(roomCode);
+      }
       
       broadcastToGame(roomCode, {
         type: "gameState",
@@ -472,7 +554,11 @@ function continueGameAfterElimination(roomCode, eliminated, imposterWon) {
   game.phase = "playing";
   game.currentPlayerIndex = 0;
   game.currentPlayer = game.players[0];
-  game.roundStartTime = Date.now();
+  
+  // 🔥 TIMER FIX: Starte neuen Timer
+  if (game.settings.roundTimeLimit > 0) {
+    startRoundTimer(roomCode);
+  }
   
   broadcastToGame(roomCode, {
     type: "playerEliminated",
@@ -487,6 +573,7 @@ function continueGameAfterElimination(roomCode, eliminated, imposterWon) {
   });
 }
 
+// 🔥 NEW: Erweiterte processImposterGuess Funktion
 function processImposterGuess(roomCode, playerName, guess) {
   const game = games[roomCode];
   if (!game) return;
@@ -498,13 +585,35 @@ function processImposterGuess(roomCode, playerName, guess) {
   if (isCorrect) {
     endGame(roomCode, "imposter", `Imposter haben gewonnen! Das geheime Wort "${game.secretWord}" wurde erraten von ${playerName}.`);
   } else {
-    endGame(roomCode, "crewmates", `Crewmates haben gewonnen! Imposter ${playerName} hat falsch geraten: "${guess}" statt "${game.secretWord}".`);
+    // 🔥 NEW: Unterscheide zwischen normaler Phase und Last Chance
+    if (game.phase === "imposterLastChance" && playerName === game.eliminatedImposter) {
+      console.log(`💀 Imposter ${playerName} hat in der letzten Chance falsch geraten - Crewmates gewinnen`);
+      
+      // Imposter aus Spiel entfernen
+      const remainingImposters = game.imposters.filter(imp => imp !== playerName);
+      if (remainingImposters.length === 0) {
+        endGame(roomCode, "crewmates", `Crewmates haben gewonnen! Imposter ${playerName} wurde eliminiert und hat falsch geraten: "${guess}" statt "${game.secretWord}".`);
+      } else {
+        game.imposters = remainingImposters;
+        game.players = game.players.filter(p => p !== playerName);
+        continueGameAfterElimination(roomCode, playerName, false);
+      }
+    } else {
+      // Normale Phase - Spiel endet sofort bei falschem Guess
+      endGame(roomCode, "crewmates", `Crewmates haben gewonnen! Imposter ${playerName} hat falsch geraten: "${guess}" statt "${game.secretWord}".`);
+    }
   }
 }
 
 function endGame(roomCode, winner, reason) {
   const game = games[roomCode];
   if (!game) return;
+
+  // Stop Timer
+  if (game.timerInterval) {
+    clearInterval(game.timerInterval);
+    game.timerInterval = null;
+  }
 
   console.log(`🏁 Spiel beendet in Raum ${roomCode}: ${winner} gewinnt - ${reason}`);
 
@@ -645,7 +754,7 @@ wss.on("connection", (ws) => {
         
         const validatedSettings = {
           imposterCount: Math.max(1, Math.min(settings.imposterCount || 1, maxImposters)),
-          roundTimeLimit: Math.max(60, Math.min(settings.roundTimeLimit || 300, 1800)),
+          roundTimeLimit: Math.max(0, Math.min(settings.roundTimeLimit || 300, 1800)),
           imposterHint: Boolean(settings.imposterHint)
         };
 
@@ -767,7 +876,7 @@ wss.on("connection", (ws) => {
         }
       }
 
-      // 🔥 BUG FIX: Verbesserte submitWord Handler - FORTSETZUNG
+      // 🔥 BUG FIX: Verbesserte submitWord Handler
       else if (data.type === "submitWord") {
         const { roomCode, playerName, word } = data;
         const game = games[roomCode];
@@ -830,10 +939,13 @@ wss.on("connection", (ws) => {
               // Setze Round +1 und starte direkt Voting
               game.round++;
               
-              const timeElapsed = (Date.now() - game.roundStartTime) / 1000;
-              const isForced = game.settings.roundTimeLimit > 0 && timeElapsed >= game.settings.roundTimeLimit;
+              // Stop Timer
+              if (game.timerInterval) {
+                clearInterval(game.timerInterval);
+                game.timerInterval = null;
+              }
               
-              startVotingPhase(roomCode, isForced);
+              startVotingPhase(roomCode, false);
             } else {
               console.log(`➡️ Normaler Spielerwechsel`);
               nextPlayer(roomCode);

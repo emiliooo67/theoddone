@@ -31,21 +31,21 @@
         <button id="copyLinkBtn">Link kopieren</button>
       </div>
 
-      <!-- Two Column Layout -->
-      <div class="content-grid">
-        <!-- Players -->
+      <!-- Two Column Layout - ONLY if user is host -->
+      <div id="contentGrid" class="content-grid">
+        <!-- Players - Always visible -->
         <div class="card">
           <div class="players-section">
             <h3>Spieler im Raum</h3>
             <ul id="playerList"></ul>
-            <p class="player-count">Mindestens 3 Spieler erforderlich</p>
+            <!-- BUGFIX: Player count completely removed -->
           </div>
         </div>
 
-        <!-- Controls -->
-        <div class="game-controls">
-          <!-- Game Settings (only visible to host) -->
-          <div id="gameSettings" class="card game-settings" style="display:none;">
+        <!-- Controls - ONLY visible to host -->
+        <div id="hostControls" class="game-controls" style="display:none;">
+          <!-- Game Settings -->
+          <div id="gameSettings" class="card game-settings">
             <h3>Spieleinstellungen</h3>
             <div class="settings-compact">
               <div class="setting-row">
@@ -76,7 +76,7 @@
 
           <!-- Start Button -->
           <div class="card">
-            <button id="startGameBtn" style="display:none;" class="primary-btn">Spiel starten</button>
+            <button id="startGameBtn" class="primary-btn" style="display:none;">Spiel starten</button>
           </div>
         </div>
       </div>
@@ -120,7 +120,8 @@
     const nameInputArea = document.getElementById("nameInputArea");
     const copyBtn = document.getElementById("copyLinkBtn");
     const startBtn = document.getElementById("startGameBtn");
-    const gameSettingsEl = document.getElementById("gameSettings");
+    const hostControlsEl = document.getElementById("hostControls");
+    const contentGridEl = document.getElementById("contentGrid");
 
     let socket;
     let reconnectAttempts = 0;
@@ -318,9 +319,10 @@
         playerListEl.appendChild(li);
       });
 
-      // Show/hide game settings and start button based on host status
+      // BUGFIX: Show/hide host controls and adjust layout
       if (isHost) {
-        gameSettingsEl.style.display = "block";
+        hostControlsEl.style.display = "block";
+        contentGridEl.classList.add("two-column-layout");
         startBtn.style.display = "inline-block";
         startBtn.disabled = players.length < 3;
         
@@ -335,20 +337,10 @@
         // Update imposter count options based on player count
         updateImposterOptions(players.length);
       } else {
-        gameSettingsEl.style.display = "none";
+        // BUGFIX: Non-host gets single column layout
+        hostControlsEl.style.display = "none";
+        contentGridEl.classList.remove("two-column-layout");
         startBtn.style.display = "none";
-      }
-      
-      // Update player count info
-      const playerCountEl = document.querySelector(".player-count");
-      if (playerCountEl) {
-        if (players.length < 3) {
-          playerCountEl.textContent = `Noch ${3 - players.length} Spieler benötigt`;
-          playerCountEl.style.color = "#C42000";
-        } else {
-          playerCountEl.textContent = `Bereit zum Starten! (${players.length} Spieler)`;
-          playerCountEl.style.color = "#000000";
-        }
       }
     }
 
@@ -495,5 +487,56 @@
       }
     };
   </script>
+
+  <style>
+    /* BUGFIX: Two-column layout only when host */
+    .content-grid {
+      display: block;
+    }
+    
+    .content-grid.two-column-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    
+    /* BUGFIX: Remove hover effects that create gray boxes */
+    #playerList li:hover {
+      transform: none !important;
+      box-shadow: 2px 2px 0px #A6A6A6 !important;
+    }
+    
+    /* BUGFIX: Ensure no extra elements are created */
+    .player-count, 
+    .player-count-alternative,
+    p[style*="color: #C42000"],
+    p[style*="color: #000000"],
+    p[style*="color: #28a745"] {
+      display: none !important;
+    }
+    
+    /* Animation styles */
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+  </style>
 </body>
 </html>

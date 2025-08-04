@@ -142,6 +142,10 @@
     const maxReconnectAttempts = 5;
     let isImposter = false;
     let gameSettings = {};
+    
+    // 🔥 TIMER FIX: Client-side Timer Variablen
+    let currentTimer = null;
+    let timerDisplay = null;
 
     // Initialisierung
     if (!playerName || !roomCode) {
@@ -153,21 +157,22 @@
       connectToServer();
     }
 
-    // BUGFIX: updateGameDisplay Funktion - Spielphase in Header
+    // 🔥 TIMER FIX: Synchrone Timer-Anzeige 
     function updateGameDisplay() {
       if (!gameState.players) return;
       
-      // BUG 3 FIX: Spielphase in Header anzeigen
       const roomInfo = document.querySelector('.game-header .room-info');
       if (roomInfo && gameState.phase) {
-        let phaseText = gameState.phase === "playing" ? "SPIELPHASE" : "ABSTIMMUNG";
+        let phaseText = gameState.phase === "playing" ? "SPIELPHASE" : 
+                       gameState.phase === "voting" ? "ABSTIMMUNG" :
+                       gameState.phase === "imposterLastChance" ? "LETZTE CHANCE" : "SPIEL";
         let roundText = `RUNDE ${gameState.round || 1}`;
         let rightText = `DU: ${playerName}`;
         
-        // Bei Zeit-Limit die Zeit anzeigen
-        if (gameState.timeRemaining !== null && gameState.timeRemaining !== undefined && gameState.timeRemaining > 0) {
-          const minutes = Math.floor(gameState.timeRemaining / 60);
-          const seconds = gameState.timeRemaining % 60;
+        // 🔥 TIMER FIX: Zeige synchrone Timer-Anzeige
+        if (timerDisplay && timerDisplay > 0) {
+          const minutes = Math.floor(timerDisplay / 60);
+          const seconds = timerDisplay % 60;
           rightText = `${minutes}:${seconds.toString().padStart(2, '0')} MIN`;
         }
         
@@ -181,7 +186,6 @@
       updatePlayersList();
     }
 
-    // BUGFIX: nextPlayer - Bessere Fehlerbehandlung und Button-Deaktivierung
     function nextPlayer() {
       console.log("🎤 FERTIG Button gedrückt");
       
@@ -212,7 +216,6 @@
         socket.send(JSON.stringify(message));
         console.log("✅ Voice-Chat Nachricht gesendet");
         
-        // Nach 1 Sekunde automatisch verstecken
         setTimeout(() => {
           hideAllInputs();
           showWaiting("Warte auf nächsten Spieler...");
@@ -255,7 +258,7 @@
         }, 500);
       };
 
-      // 🔥 BUG FIX: Verbesserte Message Handler
+      // 🔥 BUG FIX: Erweiterte Message Handler
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -279,9 +282,18 @@
               break;
               
             case "votingPhase":
-              // BUG FIX: Explizit Voting Phase behandeln
               console.log("🗳️ Voting Phase gestartet");
               handleVotingPhase(data);
+              break;
+              
+            // 🔥 NEW: Timer Updates
+            case "timerUpdate":
+              handleTimerUpdate(data);
+              break;
+              
+            // 🔥 NEW: Imposter Last Chance
+            case "imposterLastChance":
+              handleImposterLastChance(data);
               break;
               
             case "playerEliminated":
@@ -337,6 +349,19 @@
           showWaiting("Verbindung dauerhaft verloren. Bitte lade die Seite neu.");
         }
       };
+    }
+
+    // 🔥 TIMER FIX: Synchroner Timer Handler
+    function handleTimerUpdate(data) {
+      timerDisplay = data.timeRemaining;
+      updateGameDisplay();
+      
+      // Warnung bei wenig Zeit
+      if (data.timeRemaining <= 10 && data.timeRemaining > 0) {
+        if (data.timeRemaining === 10) {
+          showGameMessage("⏰ Nur noch 10 Sekunden!");
+        }
+      }
     }
 
     function handleGameStarted(data) {
@@ -409,7 +434,6 @@
       }
     }
 
-    // BUG FIX: Verbesserte handleVotingPhase Funktion
     function handleVotingPhase(data) {
       console.log("🗳️ Voting Phase Handler - Data:", data);
       
@@ -432,6 +456,25 @@
       // Show forced voting message if applicable
       if (data.forced) {
         showGameMessage("Zeit abgelaufen - Zwangsabstimmung!");
+      }
+    }
+
+    // 🔥 NEW: Imposter Last Chance Handler
+    function handleImposterLastChance(data) {
+      console.log("🕵️ Imposter Last Chance Phase gestartet:", data);
+      
+      gameState = data.gameState;
+      updateGameDisplay();
+      hideAllInputs();
+      
+      const eliminatedImposter = data.eliminatedImposter;
+      
+      if (playerName === eliminatedImposter) {
+        // Du bist der eliminierte Imposter - zeige Last Chance Interface
+        showImposterLastChance();
+      } else {
+        // Andere Spieler - zeige Waiting mit Info
+        showWaiting(`${eliminatedImposter} wurde eliminiert! Er hat 30 Sekunden für eine letzte Vermutung...`);
       }
     }
 
@@ -498,7 +541,6 @@
       });
     }
 
-    // BUGFIX: Voice Game Area - Bessere Fehlerbehandlung
     function showVoiceGameArea() {
       console.log("🎤 showVoiceGameArea() - Du bist dran!");
       
@@ -558,6 +600,12 @@
       const imposterVoting = document.getElementById("imposterVotingOptions");
       if (imposterVoting) {
         imposterVoting.remove();
+      }
+      
+      // 🔥 NEW: Remove Last Chance Interface
+      const lastChance = document.getElementById("imposterLastChance");
+      if (lastChance) {
+        lastChance.remove();
       }
     }
 
@@ -631,7 +679,106 @@
       showSuccess("Vermutung abgegeben!");
     }
 
-    // BUGFIX: Imposter Voting Options - NUR Wort raten und Überspringen
+    // 🔥 NEW: Imposter Last Chance UI
+    function showImposterLastChance() {
+      const lastChanceDiv = document.createElement("div");
+      lastChanceDiv.id = "imposterLastChance";
+      lastChanceDiv.className = "imposter-last-chance";
+      lastChanceDiv.innerHTML = `
+        <div class="last-chance-content">
+          <h2>🕵️ LETZTE CHANCE!</h2>
+          <p>Du wurdest eliminiert, aber du hast <strong>30 Sekunden</strong> für eine letzte Vermutung!</p>
+          
+          <div class="countdown" id="lastChanceCountdown">30</div>
+          
+          <div class="input-group">
+            <input type="text" id="lastChanceGuess" placeholder="Das geheime Wort ist..." maxlength="30" />
+            <button onclick="submitLastChanceGuess()" class="guess-btn">LETZTER VERSUCH!</button>
+          </div>
+          
+          <p class="warning">⚠️ Bei falschem Guess verlierst du das Spiel!</p>
+        </div>
+      `;
+      
+      document.querySelector('.game-container').appendChild(lastChanceDiv);
+      
+      // Focus auf Input
+      document.getElementById("lastChanceGuess").focus();
+      
+      // Enter-Key Support
+      document.getElementById("lastChanceGuess").addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          submitLastChanceGuess();
+        }
+      });
+      
+      // Countdown Timer
+      let timeLeft = 30;
+      const countdownInterval = setInterval(() => {
+        timeLeft--;
+        const countdownEl = document.getElementById("lastChanceCountdown");
+        if (countdownEl) {
+          countdownEl.textContent = timeLeft;
+          
+          // Farbe ändern bei wenig Zeit
+          if (timeLeft <= 10) {
+            countdownEl.style.color = "#C42000";
+            countdownEl.style.animation = "pulse 1s infinite";
+          }
+          
+          if (timeLeft <= 0) {
+            clearInterval(countdownInterval);
+            showError("Zeit abgelaufen! Crewmates gewinnen.");
+            
+            // Remove Last Chance Interface
+            const lastChance = document.getElementById("imposterLastChance");
+            if (lastChance) {
+              lastChance.remove();
+            }
+          }
+        } else {
+          clearInterval(countdownInterval);
+        }
+      }, 1000);
+    }
+
+    function submitLastChanceGuess() {
+      const guess = document.getElementById("lastChanceGuess").value.trim();
+      
+      if (guess === "") {
+        showError("Bitte gib deine letzte Vermutung ein!");
+        return;
+      }
+      
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        showError("Keine Verbindung zum Server!");
+        return;
+      }
+      
+      // Button deaktivieren
+      const button = document.querySelector("#imposterLastChance .guess-btn");
+      if (button) {
+        button.disabled = true;
+        button.textContent = "GESENDET...";
+      }
+      
+      socket.send(JSON.stringify({
+        type: "imposterGuess",
+        roomCode: roomCode,
+        playerName: playerName,
+        guess: guess
+      }));
+      
+      // Remove Last Chance Interface nach dem Senden
+      setTimeout(() => {
+        const lastChance = document.getElementById("imposterLastChance");
+        if (lastChance) {
+          lastChance.remove();
+        }
+        showWaiting("Letzte Vermutung abgegeben - warte auf Ergebnis...");
+      }, 500);
+    }
+
     function showImposterVotingOptions() {
       const imposterVotingDiv = document.createElement("div");
       imposterVotingDiv.id = "imposterVotingOptions";
@@ -914,6 +1061,15 @@
         to { 
           transform: translateX(0) rotate(0deg); 
           opacity: 1; 
+        }
+      }
+      
+      @keyframes pulse {
+        0%, 100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
         }
       }
     `;
