@@ -1805,3 +1805,25 @@ button:focus-visible, input:focus-visible, select:focus-visible {
     gap: 16px;
   }
 }
+
+.logo {
+  width: 200px !important;
+  height: 200px !important;
+  min-width: 200px !important;
+  min-height: 200px !important;
+  max-width: 200px !important;
+  max-height: 200px !important;
+  margin: 0 auto 12px !important;
+  background: url('/assets/logo.png') center/contain no-repeat !important;
+  background-size: contain !important;
+  display: block !important;
+}
+
+.header .logo,
+.container .logo,
+div.logo {
+  width: 200px !important;
+  height: 200px !important;
+  background: url('/assets/logo.png') center/contain no-repeat !important;
+  background-size: contain !important;
+}
