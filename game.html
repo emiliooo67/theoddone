@@ -186,6 +186,7 @@
       updatePlayersList();
     }
 
+    // 🔥 FIX: Keine doppelten Messages mehr
     function nextPlayer() {
       console.log("🎤 FERTIG Button gedrückt");
       
@@ -216,10 +217,11 @@
         socket.send(JSON.stringify(message));
         console.log("✅ Voice-Chat Nachricht gesendet");
         
+        // 🔥 FIX: Nur Voice Area verstecken, NICHT das globale Waiting zeigen
         setTimeout(() => {
-          hideAllInputs();
-          showWaiting("Warte auf nächsten Spieler...");
-        }, 1000);
+          voiceGameAreaEl.style.display = "none"; // Nur Voice Area verstecken
+          // showWaiting() wird vom Server-Response ausgelöst, nicht hier!
+        }, 500);
         
       } catch (error) {
         console.error("❌ Fehler beim Senden:", error);
@@ -513,10 +515,18 @@
       }
     }
 
+    // 🔥 FIX: Verbesserte Spieler-Liste ohne Scrollbar
     function updatePlayersList() {
       if (!playersListEl || !gameState.players) return;
       
       playersListEl.innerHTML = "";
+      
+      // 🔥 FIX: Kompakte Ansicht bei vielen Spielern
+      if (gameState.players.length > 6) {
+        playersListEl.classList.add("compact");
+      } else {
+        playersListEl.classList.remove("compact");
+      }
       
       gameState.players.forEach(player => {
         const playerDiv = document.createElement("div");
@@ -767,7 +777,7 @@
         roomCode: roomCode,
         playerName: playerName,
         guess: guess
-      }));
+       }));
       
       // Remove Last Chance Interface nach dem Senden
       setTimeout(() => {
@@ -1050,7 +1060,7 @@
       }
     });
 
-    // CSS für Animationen
+    // CSS für Animationen und Fixes
     const style = document.createElement('style');
     style.textContent = `
       @keyframes slideInRight {
@@ -1071,6 +1081,33 @@
         50% {
           transform: scale(1.1);
         }
+      }
+      
+      /* 🔥 FIX: Spieler-Liste ohne Scrollbar */
+      .players-section {
+        margin: 16px 0;
+        flex-shrink: 0;
+        height: 200px;
+        overflow: hidden;
+      }
+
+      .players-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        height: 100%;
+        overflow: hidden;
+        align-content: start;
+      }
+
+      .players-grid.compact {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 8px;
+      }
+
+      .players-grid.compact .player-card {
+        padding: 8px;
+        font-size: 12px;
       }
     `;
     document.head.appendChild(style);
