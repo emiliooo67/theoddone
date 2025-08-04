@@ -313,6 +313,7 @@ function startGame(roomCode) {
   return true;
 }
 
+// 🔥 BUG FIX: Verbesserte nextPlayer Funktion
 function nextPlayer(roomCode) {
   const game = games[roomCode];
   if (!game) {
@@ -327,6 +328,7 @@ function nextPlayer(roomCode) {
 
   console.log(`➡️ Nächster Spieler: ${game.currentPlayer} (Index: ${game.currentPlayerIndex})`);
 
+  // BUG FIX: Wenn wir wieder bei Index 0 sind, ist die Runde vorbei
   if (game.currentPlayerIndex === 0) {
     game.round++;
     
@@ -339,8 +341,11 @@ function nextPlayer(roomCode) {
       startVotingPhase(roomCode, false);
     }
   } else {
-    const gameStateMessage = {
-      type: "gameState",
+    // BUG FIX: Für normale Spielerwechsel sende nextPlayerTurn statt gameState
+    const nextPlayerMessage = {
+      type: "nextPlayerTurn", // Spezifischer Message-Type
+      currentPlayer: game.currentPlayer,
+      currentPlayerIndex: game.currentPlayerIndex,
       gameState: {
         players: game.players,
         currentPlayer: game.currentPlayer,
@@ -351,17 +356,17 @@ function nextPlayer(roomCode) {
       }
     };
 
-    console.log(`📡 Sende gameState Update an alle Spieler in Raum ${roomCode}`);
+    console.log(`📡 Sende nextPlayerTurn an alle Spieler in Raum ${roomCode}`);
     console.log(`🎯 Neuer aktueller Spieler: ${game.currentPlayer}`);
     
-    const sentCount = broadcastToGame(roomCode, gameStateMessage);
+    const sentCount = broadcastToGame(roomCode, nextPlayerMessage);
     
     if (sentCount === 0) {
-      console.log(`⚠️ Kein Spieler hat gameState erhalten - versuche erneut in 2 Sekunden`);
+      console.log(`⚠️ Kein Spieler hat nextPlayerTurn erhalten - versuche erneut in 2 Sekunden`);
       setTimeout(() => {
         if (games[roomCode]) {
-          console.log(`🔄 Retry gameState Broadcast für Raum ${roomCode}`);
-          broadcastToGame(roomCode, gameStateMessage);
+          console.log(`🔄 Retry nextPlayerTurn Broadcast für Raum ${roomCode}`);
+          broadcastToGame(roomCode, nextPlayerMessage);
         }
       }, 2000);
     }
@@ -762,7 +767,7 @@ wss.on("connection", (ws) => {
         }
       }
 
-      // 🔒 SICHER: submitWord Handler - nur Voice-Chat Marker
+      // 🔥 BUG FIX: Verbesserte submitWord Handler - FORTSETZUNG
       else if (data.type === "submitWord") {
         const { roomCode, playerName, word } = data;
         const game = games[roomCode];
@@ -800,15 +805,7 @@ wss.on("connection", (ws) => {
         console.log(`🔍 Debug vor Broadcasting:`);
         console.log(`   Raum ${roomCode} hat ${room.players.length} Spieler: ${room.players.join(", ")}`);
         
-        room.players.forEach((player, index) => {
-          const socketKey = getSocketKey(roomCode, player);
-          const socket = playerSockets[socketKey];
-          const status = socket && socket.readyState === WebSocket.OPEN ? '✅ BEREIT' : '❌ NICHT BEREIT';
-          console.log(`   ${player}: ${status}`);
-        });
-
         const successCount = broadcastToGame(roomCode, wordMessage);
-        
         console.log(`📊 Broadcasting Ergebnis: ${successCount}/${room.players.length} erfolgreich`);
         
         if (successCount < room.players.length) {
@@ -819,10 +816,28 @@ wss.on("connection", (ws) => {
           }, 500);
         }
 
+        // BUG FIX: Warte kurz, dann wechsle zum nächsten Spieler oder starte Voting
         setTimeout(() => {
           if (games[roomCode]) {
             console.log(`⏭️ Wechsel zum nächsten Spieler in Raum ${roomCode}`);
-            nextPlayer(roomCode);
+            console.log(`🔍 Aktueller Index: ${game.currentPlayerIndex}, Player Count: ${game.players.length}`);
+            
+            // BUG FIX: Prüfe ob wir am Ende der Runde sind BEVOR wir nextPlayer aufrufen
+            const willBeEndOfRound = (game.currentPlayerIndex + 1) % game.players.length === 0;
+            
+            if (willBeEndOfRound) {
+              console.log(`🔄 Ende der Runde erreicht - starte Voting Phase`);
+              // Setze Round +1 und starte direkt Voting
+              game.round++;
+              
+              const timeElapsed = (Date.now() - game.roundStartTime) / 1000;
+              const isForced = game.settings.roundTimeLimit > 0 && timeElapsed >= game.settings.roundTimeLimit;
+              
+              startVotingPhase(roomCode, isForced);
+            } else {
+              console.log(`➡️ Normaler Spielerwechsel`);
+              nextPlayer(roomCode);
+            }
           }
         }, 1000);
       }
