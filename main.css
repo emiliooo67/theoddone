@@ -67,8 +67,8 @@ body::before {
 }
 
 .logo {
-  width: 200px;
-  height: 200px;
+  width: 200px !important;
+  height: 200px !important;
   margin: 0 auto 12px;
   background: url('/assets/logo.png') center/contain no-repeat;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
@@ -80,8 +80,8 @@ body::before {
 }
 
 .game-header .logo {
-  width: 160px;
-  height: 160px;
+  width: 160px !important;
+  height: 160px !important;
   margin-bottom: 8px;
 }
 

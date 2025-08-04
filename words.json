@@ -1,172 +1,101 @@
 {
   "categories": {
-    "animals": [
-      "Hund", "Katze", "Chamäleon", "Pfau", "Dachs", "Eule", "Rabe", "Qualle",
-      "Krake", "Ameise", "Faultier", "Luchs", "Marder", "Igel", "Schwan"
+    "tiere": [
+      "Hund", "Katze", "Eule", "Qualle", "Igel", "Panda", "Zebra", "Luchs", "Fuchs", "Bär",
+      "Wolf", "Chamäleon", "Schwan", "Känguru", "Dachs", "Marder", "Koala", "Pfau", "Affe", "Krake"
     ],
-    "food": [
-      "Pizza", "Apfel", "Lasagne", "Donut", "Spargel", "Zimt", "Senf", "Couscous",
-      "Tofu", "Chili", "Quark", "Zwiebel", "Lachs", "Rhabarber", "Kohl"
+    "essen": [
+      "Pizza", "Lasagne", "Donut", "Zimt", "Rhabarber", "Sushi", "Käse", "Toast", "Senf", "Lachs",
+      "Couscous", "Brot", "Quark", "Apfel", "Banane", "Eis", "Chili", "Tofu", "Nudeln", "Kuchen"
     ],
-    "objects": [
-      "Stuhl", "Taschenlampe", "Kompass", "Lupe", "Wecker", "Spiegel", "Rakete", "Truhe",
-      "Zelt", "Schlauch", "Besen", "Leiter", "Kreide", "Tacker", "Schere"
+    "objekte": [
+      "Schlüssel", "Tasche", "Spiegel", "Rakete", "Truhe", "Zelt", "Lampe", "Besen", "Wecker", "Kreide",
+      "Leiter", "Schere", "Tacker", "Brille", "Uhr", "Lupe", "Kompass", "Ball", "Fahrrad", "Buch"
     ],
-    "places": [
-      "Wald", "U-Bahn", "Dachboden", "Insel", "Friedhof", "Stadion", "Tankstelle", "Höhle",
-      "Markt", "Tunnel", "Festung", "Lager", "Brücke", "Mülldeponie", "Turm"
+    "orte": [
+      "Park", "Kino", "Schule", "Dachboden", "Bahnhof", "Tankstelle", "Friedhof", "Brücke", "Festung", "Wald",
+      "Tunnel", "Stadion", "Spielplatz", "Hotel", "Museum", "Zoo", "Turm", "Insel", "Markt", "Flughafen"
     ],
-    "activities": [
-      "Schwimmen", "Schach", "Nähen", "Wandern", "Meditieren", "Fechten", "Tauchen", "Jonglieren",
-      "Skateboarden", "Angeln", "Rätseln", "Häkeln", "Boxen", "Reiten", "Zaubern"
+    "aktionen": [
+      "Schlafen", "Joggen", "Skateboarden", "Schwimmen", "Tanzen", "Zaubern", "Tauchen", "Jonglieren", "Reiten", "Angeln",
+      "Wandern", "Rätseln", "Lernen", "Boxen", "Häkeln", "Nähen", "Kochen", "Singen", "Lesen", "Fechten"
     ],
-    "professions": [
-      "Arzt", "Lehrer", "Pilot", "Astronaut", "Schlosser", "Winzer", "Barkeeper", "Florist",
-      "Pathologe", "Uhrmacher", "Regisseur", "Clown", "Notar", "Dachdecker", "Chirurg"
+    "berufe": [
+      "Arzt", "Lehrer", "Pilot", "Fotograf", "Barkeeper", "Postbote", "Verkäufer", "Uhrmacher", "Florist", "Clown",
+      "Notar", "Schlosser", "Handwerker", "Kassierer", "Chirurg", "Erzieher", "Friseur", "Musiker", "Astronaut", "Regisseur"
     ],
-    "weather": [
-      "Sonne", "Schnee", "Dunst", "Hagel", "Orkan", "Blitz", "Nieselregen", "Hitze",
-      "Sturm", "Eis", "Regenbogen", "Smog", "Flaute", "Monsun", "Tau"
+    "technik": [
+      "WLAN", "Screenshot", "Powerbank", "Bluetooth", "Ladegerät", "Fernbedienung", "Tastatur", "Headset", "Monitor", "Mikrofon",
+      "Handy", "App", "Cloud", "VPN", "USB-Stick", "HDMI", "Smartwatch", "Akkuladegerät", "Speicherkarte", "Router"
     ],
-    "popculture": [
-      "Minecraft", "Fortnite", "Counter-Strike", "Clash of Clans", "Among Us",
-      "Roblox", "TikTok", "Instagram", "WhatsApp", "Snapchat",
-      "YouTube", "Spotify", "Discord", "Twitch", "Tinder"
+    "gefühle": [
+      "Hype", "Fremdscham", "Trauma", "Peinlich", "Nervös", "Wut", "Schüchtern", "Verknallt", "Müde", "Eifersucht",
+      "Motivation", "Stress", "Unruhe", "Zufriedenheit", "Einsamkeit", "Scham", "Freude", "Erleichterung", "Angst", "Unsicherheit"
+    ],
+    "social": [
+      "TikTok", "Instagram", "Snapchat", "WhatsApp", "Tinder", "Spotify", "YouTube", "Twitch", "Discord", "Netflix",
+      "Bro", "Ehrenlos", "Flirt", "Cringe", "Gerücht", "Freundschaft", "Drama", "Chat", "Reaktion", "Influencer"
+    ],
+    "alltag": [
+      "Pfand", "Müll", "Ferien", "Ausbildung", "Zeugnis", "Kiosk", "Samstag", "Rechnung", "Pausenhof", "Hausaufgabe",
+      "Klausur", "Stundenplan", "Gymnasium", "Nachhilfe", "Treppenhaus", "Parkplatz", "Einkauf", "Stau", "Döner", "Feierabend"
     ]
   },
   "hints": {
-    "Hund": "Leine",
-    "Katze": "Krallen",
-    "Chamäleon": "Farbe",
-    "Pfau": "Rad",
-    "Dachs": "Bau",
-    "Eule": "Nacht",
-    "Rabe": "Klug",
-    "Qualle": "Tentakel",
-    "Krake": "Arme",
-    "Ameise": "Kolonie",
-    "Faultier": "Zeitlupe",
-    "Luchs": "Wald",
-    "Marder": "Kabel",
-    "Igel": "Stacheln",
-    "Schwan": "Elegant",
+    "Hund": "Blind", "Katze": "Krallen", "Eule": "Nacht", "Qualle": "Tentakel", "Igel": "Stacheln",
+    "Panda": "Bambus", "Zebra": "Streifen", "Luchs": "Wald", "Fuchs": "Schlau", "Bär": "Pelz",
+    "Wolf": "Nacht", "Chamäleon": "Farbe", "Schwan": "Elegant", "Känguru": "Beutel", "Dachs": "Bau",
+    "Marder": "Kabel", "Koala": "Eukalyptus", "Pfau": "Rad", "Affe": "Klettern", "Krake": "Arme",
 
-    "Pizza": "Dreieck",
-    "Apfel": "Kern",
-    "Lasagne": "Schichten",
-    "Donut": "Loch",
-    "Spargel": "Frühling",
-    "Zimt": "Winter",
-    "Senf": "Würze",
-    "Couscous": "Körner",
-    "Tofu": "Neutral",
-    "Chili": "Feuer",
-    "Quark": "Frisch",
-    "Zwiebel": "Tränen",
-    "Lachs": "Rosa",
-    "Rhabarber": "Sauer",
-    "Kohl": "Blätter",
+    "Pizza": "Dreieck", "Lasagne": "Schicht", "Donut": "Loch", "Zimt": "Winter", "Rhabarber": "Sauer",
+    "Sushi": "Rolle", "Käse": "Geruch", "Toast": "Knusprig", "Senf": "Würze", "Lachs": "Rosa",
+    "Couscous": "Körner", "Brot": "Kruste", "Quark": "Frisch", "Apfel": "Kern", "Banane": "Krumm",
+    "Eis": "Kalt", "Chili": "Scharf", "Tofu": "Neutral", "Nudeln": "Italien", "Kuchen": "Feier",
 
-    "Stuhl": "Lehne",
-    "Taschenlampe": "Strahl",
-    "Kompass": "Richtung",
-    "Lupe": "Vergrößert",
-    "Wecker": "Ton",
-    "Spiegel": "Du",
-    "Rakete": "Start",
-    "Truhe": "Versteck",
-    "Zelt": "Nacht",
-    "Schlauch": "Wasser",
-    "Besen": "Kehren",
-    "Leiter": "Hoch",
-    "Kreide": "Staub",
-    "Tacker": "Heftung",
-    "Schere": "Schneiden",
+    "Schlüssel": "Tür", "Tasche": "Tragen", "Spiegel": "Du", "Rakete": "Start", "Truhe": "Versteck",
+    "Zelt": "Nacht", "Lampe": "Licht", "Besen": "Kehren", "Wecker": "Klingeln", "Kreide": "Staub",
+    "Leiter": "Hoch", "Schere": "Schnitt", "Tacker": "Heftung", "Brille": "Sehen", "Uhr": "Zeit",
+    "Lupe": "Zoom", "Kompass": "Richtung", "Ball": "Spiel", "Fahrrad": "Pedale", "Buch": "Seiten",
 
-    "Wald": "Blätter",
-    "U-Bahn": "Tiefe",
-    "Dachboden": "Staub",
-    "Insel": "Abseits",
-    "Friedhof": "Still",
-    "Stadion": "Lärm",
-    "Tankstelle": "Zapfen",
-    "Höhle": "Dunkel",
-    "Markt": "Stimmen",
-    "Tunnel": "Durchfahrt",
-    "Festung": "Mauer",
-    "Lager": "Vorrat",
-    "Brücke": "Verbindung",
-    "Mülldeponie": "Geruch",
-    "Turm": "Höhe",
+    "Park": "Grün", "Kino": "Film", "Schule": "Tafel", "Dachboden": "Staub", "Bahnhof": "Gleis",
+    "Tankstelle": "Zapfen", "Friedhof": "Still", "Brücke": "Verbindung", "Festung": "Mauer", "Wald": "Bäume",
+    "Tunnel": "Dunkel", "Stadion": "Fans", "Spielplatz": "Rutsche", "Hotel": "Zimmer", "Museum": "Ausstellung",
+    "Zoo": "Tiere", "Turm": "Höhe", "Insel": "Abseits", "Markt": "Stände", "Flughafen": "Abflug",
 
-    "Schwimmen": "Kacheln",
-    "Schach": "Denken",
-    "Nähen": "Faden",
-    "Wandern": "Pfad",
-    "Meditieren": "Stille",
-    "Fechten": "Maske",
-    "Tauchen": "Tiefe",
-    "Jonglieren": "Balance",
-    "Skateboarden": "Rollen",
-    "Angeln": "Geduld",
-    "Rätseln": "Logik",
-    "Häkeln": "Muster",
-    "Boxen": "Ring",
-    "Reiten": "Sattel",
-    "Zaubern": "Trick",
+    "Schlafen": "Kissen", "Joggen": "Laufen", "Skateboarden": "Rollen", "Schwimmen": "Wasser", "Tanzen": "Bewegung",
+    "Zaubern": "Trick", "Tauchen": "Tiefe", "Jonglieren": "Balance", "Reiten": "Sattel", "Angeln": "Geduld",
+    "Wandern": "Pfad", "Rätseln": "Logik", "Lernen": "Wissen", "Boxen": "Ring", "Häkeln": "Wolle",
+    "Nähen": "Faden", "Kochen": "Topf", "Singen": "Stimme", "Lesen": "Text", "Fechten": "Maske",
 
-    "Arzt": "Kittel",
-    "Lehrer": "Kreide",
-    "Pilot": "Cockpit",
-    "Astronaut": "Schwerelos",
-    "Schlosser": "Metall",
-    "Winzer": "Trauben",
-    "Barkeeper": "Shaker",
-    "Florist": "Duft",
-    "Pathologe": "Stille",
-    "Uhrmacher": "Fein",
-    "Regisseur": "Szene",
-    "Clown": "Schminke",
-    "Notar": "Siegel",
-    "Dachdecker": "Ziegel",
-    "Chirurg": "Skalpell",
+    "Arzt": "Kittel", "Lehrer": "Fragen", "Pilot": "Cockpit", "Fotograf": "Kamera", "Barkeeper": "Shaker",
+    "Postbote": "Brief", "Verkäufer": "Kasse", "Uhrmacher": "Fein", "Florist": "Duft", "Clown": "Schminke",
+    "Notar": "Siegel", "Schlosser": "Metall", "Handwerker": "Werkzeug", "Kassierer": "Piepen", "Chirurg": "Skalpell",
+    "Erzieher": "Kinder", "Friseur": "Schere", "Musiker": "Instrument", "Astronaut": "Schwerelos", "Regisseur": "Szene",
 
-    "Sonne": "Licht",
-    "Schnee": "Weiß",
-    "Dunst": "Schleier",
-    "Hagel": "Hart",
-    "Orkan": "Chaos",
-    "Blitz": "Sekunde",
-    "Nieselregen": "Fein",
-    "Hitze": "Schwitzen",
-    "Sturm": "Pfeifen",
-    "Eis": "Glatt",
-    "Regenbogen": "Spektrum",
-    "Smog": "Dunst",
-    "Flaute": "Ruhe",
-    "Monsun": "Tropen",
-    "Tau": "Morgen",
+    "WLAN": "Signal", "Screenshot": "Bildschirm", "Powerbank": "Ladung", "Bluetooth": "Kopplung", "Ladegerät": "Stecker",
+    "Fernbedienung": "Knopf", "Tastatur": "Tasten", "Headset": "Hörer", "Monitor": "Anzeige", "Mikrofon": "Ton",
+    "Handy": "App", "App": "Download", "Cloud": "Speicher", "VPN": "Sicherheit", "USB-Stick": "Daten",
+    "HDMI": "Anschluss", "Smartwatch": "Puls", "Akkuladegerät": "Batterie", "Speicherkarte": "Mini", "Router": "Verbindung",
 
-    "Minecraft": "Blöcke",
-    "Fortnite": "Bau",
-    "Counter-Strike": "Bombe",
-    "Clash of Clans": "Clan",
-    "Among Us": "Verrat",
-    "Roblox": "Avatar",
-    "TikTok": "Loop",
-    "Instagram": "Filter",
-    "WhatsApp": "Nachricht",
-    "Snapchat": "Verschwinden",
-    "YouTube": "Kanal",
-    "Spotify": "Playlist",
-    "Discord": "Server",
-    "Twitch": "Chat",
-    "Tinder": "Wischen"
+    "Hype": "Trend", "Fremdscham": "Zuschauen", "Trauma": "Alt", "Peinlich": "Moment", "Nervös": "Unruhe",
+    "Wut": "Rot", "Schüchtern": "Versteckt", "Verknallt": "Herz", "Müde": "Augen", "Eifersucht": "Vergleich",
+    "Motivation": "Push", "Stress": "Druck", "Unruhe": "Zappeln", "Zufriedenheit": "Ruhe", "Einsamkeit": "Allein",
+    "Scham": "Rotwerden", "Freude": "Lächeln", "Erleichterung": "Luft", "Angst": "Dunkel", "Unsicherheit": "Zögern",
+
+    "TikTok": "Loop", "Instagram": "Filter", "Snapchat": "Verschwinden", "WhatsApp": "Nachricht", "Tinder": "Wischen",
+    "Spotify": "Playlist", "YouTube": "Kanal", "Twitch": "Chat", "Discord": "Server", "Netflix": "Stream",
+    "Bro": "Digga", "Ehrenlos": "Verrat", "Flirt": "Blick", "Cringe": "Fremd", "Gerücht": "Hören",
+    "Freundschaft": "Vertrauen", "Drama": "Laut", "Chat": "Antwort", "Reaktion": "Gesicht", "Influencer": "Follower",
+
+    "Pfand": "Flasche", "Müll": "Tonne", "Ferien": "Frei", "Ausbildung": "Beruf", "Zeugnis": "Noten",
+    "Kiosk": "Snack", "Samstag": "Ausschlafen", "Rechnung": "Zahlen", "Pausenhof": "Ball", "Hausaufgabe": "Zettel",
+    "Klausur": "Panik", "Stundenplan": "Fächer", "Gymnasium": "Oberstufe", "Nachhilfe": "Hilfe", "Treppenhaus": "Stufen",
+    "Parkplatz": "Suchen", "Einkauf": "Wagen", "Stau": "Warten", "Döner": "Soße", "Feierabend": "Endlich"
   },
   "metadata": {
-    "version": "2.0",
-    "totalWords": 120,
-    "categories": 8,
-    "lastUpdated": "2025-07-30"
+    "version": "3.5",
+    "totalWords": 200,
+    "categories": 10,
+    "lastUpdated": "2025-08-04"
   }
 }
