@@ -255,6 +255,7 @@
         }, 500);
       };
 
+      // 🔥 BUG FIX: Verbesserte Message Handler
       socket.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -278,6 +279,8 @@
               break;
               
             case "votingPhase":
+              // BUG FIX: Explizit Voting Phase behandeln
+              console.log("🗳️ Voting Phase gestartet");
               handleVotingPhase(data);
               break;
               
@@ -406,13 +409,29 @@
       }
     }
 
+    // BUG FIX: Verbesserte handleVotingPhase Funktion
     function handleVotingPhase(data) {
+      console.log("🗳️ Voting Phase Handler - Data:", data);
+      
+      // Update game state
+      if (data.gameState) {
+        gameState = data.gameState;
+        updateGameDisplay();
+      }
+      
       hideAllInputs();
       
       if (isImposter) {
+        console.log("🕵️ Zeige Imposter Voting Options");
         showImposterVotingOptions();
       } else {
+        console.log("👥 Zeige Standard Voting");
         showVoting();
+      }
+      
+      // Show forced voting message if applicable
+      if (data.forced) {
+        showGameMessage("Zeit abgelaufen - Zwangsabstimmung!");
       }
     }
 
