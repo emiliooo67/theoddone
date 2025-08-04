@@ -67,8 +67,8 @@ body::before {
 }
 
 .logo {
-  width: 200px !important;
-  height: 200px !important;
+  width: 160px !important;
+  height: 160px !important;
   margin: 0 auto 12px;
   background: url('/assets/logo.png') center/contain no-repeat;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
@@ -80,8 +80,8 @@ body::before {
 }
 
 .game-header .logo {
-  width: 160px !important;
-  height: 160px !important;
+  width: 140px !important;
+  height: 140px !important;
   margin-bottom: 8px;
 }
 
@@ -1807,12 +1807,12 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 }
 
 .logo {
-  width: 200px !important;
-  height: 200px !important;
-  min-width: 200px !important;
-  min-height: 200px !important;
-  max-width: 200px !important;
-  max-height: 200px !important;
+  width: 160px !important;
+  height: 160px !important;
+  min-width: 160px !important;
+  min-height: 160px !important;
+  max-width: 160px !important;
+  max-height: 160px !important;
   margin: 0 auto 12px !important;
   background: url('/assets/logo.png') center/contain no-repeat !important;
   background-size: contain !important;
@@ -1822,8 +1822,8 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .header .logo,
 .container .logo,
 div.logo {
-  width: 200px !important;
-  height: 200px !important;
+  width: 140px !important;
+  height: 140px !important;
   background: url('/assets/logo.png') center/contain no-repeat !important;
   background-size: contain !important;
 }
