@@ -94,6 +94,11 @@ function selectImposters(players, imposterCount) {
   return shuffled.slice(0, imposterCount);
 }
 
+// 🆕 FIX 2: Random Starting Player
+function selectRandomStartingPlayer(players) {
+  return players[Math.floor(Math.random() * players.length)];
+}
+
 function getSocketKey(roomCode, playerName) {
   return `${roomCode}_${playerName}`;
 }
@@ -268,18 +273,23 @@ function startGame(roomCode) {
   const actualImposterCount = Math.min(settings.imposterCount, maxPossibleImposters);
   const imposters = selectImposters(room.players, actualImposterCount);
   
+  // 🆕 FIX 2: Random Starting Player statt immer Spieler 0
+  const startingPlayer = selectRandomStartingPlayer(room.players);
+  const startingPlayerIndex = room.players.indexOf(startingPlayer);
+  
   console.log(`🎮 Spiel gestartet in Raum ${roomCode}:`);
   console.log(`   Geheimes Wort: ${secretWord}`);
   console.log(`   Imposter(s): ${imposters.join(", ")} (${actualImposterCount}/${room.players.length})`);
   console.log(`   Spieler: ${room.players.join(", ")}`);
+  console.log(`   Startender Spieler: ${startingPlayer} (Index: ${startingPlayerIndex})`);
   console.log(`   Timer: ${settings.roundTimeLimit} Sekunden`);
 
   games[roomCode] = {
     players: [...room.players],
     secretWord: secretWord,
     imposters: imposters,
-    currentPlayer: room.players[0],
-    currentPlayerIndex: 0,
+    currentPlayer: startingPlayer, // 🆕 FIX 2: Random Starting Player
+    currentPlayerIndex: startingPlayerIndex, // 🆕 FIX 2: Random Starting Index
     round: 1,
     phase: "playing",
     wordsSpoken: [],
@@ -289,7 +299,8 @@ function startGame(roomCode) {
     roundStartTime: Date.now(),
     roundEndTime: null,
     timerInterval: null,
-    settings: settings
+    settings: settings,
+    hostPlayer: room.players[0] // 🆕 FIX 1: Speichere Host für Play Again Control
   };
 
   broadcastToRoom(roomCode, { type: "startGame" });
@@ -463,7 +474,7 @@ function skipVote(roomCode, player) {
   checkVotingComplete(roomCode);
 }
 
-// 🔥 NEW: Imposter Last Chance Feature
+// 🆕 FIX 4: Verbesserte Voting Logic
 function checkVotingComplete(roomCode) {
   const game = games[roomCode];
   if (!game) return;
@@ -472,17 +483,47 @@ function checkVotingComplete(roomCode) {
   
   if (crewmates.every(player => game.playersReady.has(player))) {
     const voteCounts = {};
+    const totalVotes = Object.keys(game.votes).length;
+    const totalCrewmates = crewmates.length;
+    
+    console.log(`🗳️ Voting Complete Check:`);
+    console.log(`   Total Crewmates: ${totalCrewmates}`);
+    console.log(`   Total Votes Cast: ${totalVotes}`);
+    console.log(`   Votes: ${JSON.stringify(game.votes)}`);
+    
+    // Count votes
     Object.values(game.votes).forEach(votedPlayer => {
       voteCounts[votedPlayer] = (voteCounts[votedPlayer] || 0) + 1;
     });
 
+    console.log(`   Vote Counts: ${JSON.stringify(voteCounts)}`);
+
+    // 🆕 FIX 4: Neue Voting Logic
     const maxVotes = Math.max(...Object.values(voteCounts), 0);
     const eliminatedPlayers = Object.keys(voteCounts).filter(p => voteCounts[p] === maxVotes);
-
-    if (maxVotes > 0 && eliminatedPlayers.length === 1) {
-      const eliminated = eliminatedPlayers[0];
+    
+    // 🆕 FIX 4: Verbesserte Voting Logic - Echte Mehrheit erforderlich
+    // Bedingungen für Elimination:
+    // 1. MEHR als die Hälfte der Crewmates muss voten (51%+)
+    // 2. Es muss einen eindeutigen Gewinner geben (kein Tie)
+    // 3. Der Gewinner muss mindestens 2 Stimmen haben (außer bei sehr wenigen Spielern)
+    
+    const minimumVotesRequired = Math.floor(totalCrewmates / 2) + 1; // 51%+ = echte Mehrheit
+    const minimumVotesToEliminate = Math.max(1, Math.ceil(totalCrewmates / 3)); // Mindestens 1/3 der Crewmates
+    
+    console.log(`   Minimum Votes Required: ${minimumVotesRequired}`);
+    console.log(`   Minimum Votes to Eliminate: ${minimumVotesToEliminate}`);
+    console.log(`   Max Votes Received: ${maxVotes}`);
+    console.log(`   Players with Max Votes: ${eliminatedPlayers.join(", ")}`);
+    
+    if (totalVotes >= minimumVotesRequired && 
+        maxVotes >= minimumVotesToEliminate && 
+        eliminatedPlayers.length === 1) {
       
-      // 🔥 NEW: Imposter Last Chance Feature
+      const eliminated = eliminatedPlayers[0];
+      console.log(`✅ Elimination Conditions Met - ${eliminated} wird eliminiert`);
+      
+      // 🆕 FIX 4: Imposter Last Chance Feature
       if (game.imposters.includes(eliminated)) {
         console.log(`🕵️ Imposter ${eliminated} wurde gewählt - gebe letzte Chance zum Raten`);
         
@@ -524,7 +565,19 @@ function checkVotingComplete(roomCode) {
         endGame(roomCode, "imposter", `Imposter haben gewonnen! Ein unschuldiger Crewmate (${eliminated}) wurde eliminiert.`);
       }
     } else {
-      // Keine Elimination oder Unentschieden
+      // 🆕 FIX 4: Keine Elimination - detailliertes Logging
+      let reason = "";
+      if (totalVotes < minimumVotesRequired) {
+        reason = `Nicht genug Stimmen (${totalVotes}/${minimumVotesRequired} erforderlich)`;
+      } else if (maxVotes < minimumVotesToEliminate) {
+        reason = `Nicht genug Stimmen für Elimination (${maxVotes}/${minimumVotesToEliminate} erforderlich)`;
+      } else if (eliminatedPlayers.length > 1) {
+        reason = `Unentschieden zwischen ${eliminatedPlayers.join(", ")}`;
+      }
+      
+      console.log(`❌ Keine Elimination: ${reason}`);
+      
+      // Spiel geht weiter
       game.phase = "playing";
       game.currentPlayerIndex = 0;
       game.currentPlayer = game.players[0];
@@ -622,7 +675,8 @@ function endGame(roomCode, winner, reason) {
     winner: winner,
     imposters: game.imposters,
     secretWord: game.secretWord,
-    reason: reason
+    reason: reason,
+    isHost: game.hostPlayer // 🆕 FIX 1: Sende Host-Info mit
   });
 
   delete games[roomCode];
@@ -995,10 +1049,28 @@ wss.on("connection", (ws) => {
         checkVotingComplete(roomCode);
       }
 
+      // 🆕 FIX 1: Nur Host kann Play Again starten
       else if (data.type === "playAgain") {
-        const { roomCode } = data;
-        if (rooms[roomCode] && rooms[roomCode].players.length >= 3) {
+        const { roomCode, playerName } = data;
+        const room = rooms[roomCode];
+        const game = games[roomCode];
+        
+        if (!room) {
+          ws.send(JSON.stringify({ type: "error", message: "Raum nicht gefunden" }));
+          return;
+        }
+        
+        // 🆕 FIX 1: Prüfe ob Spieler der Host ist
+        if (room.players[0] !== playerName) {
+          ws.send(JSON.stringify({ type: "error", message: "Nur der Host kann das Spiel neu starten" }));
+          return;
+        }
+        
+        if (room.players.length >= 3) {
+          console.log(`🎮 Host ${playerName} startet neues Spiel in Raum ${roomCode}`);
           startGame(roomCode);
+        } else {
+          ws.send(JSON.stringify({ type: "error", message: "Mindestens 3 Spieler für neues Spiel erforderlich" }));
         }
       }
 

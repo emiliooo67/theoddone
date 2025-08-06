@@ -1,13 +1,15 @@
+// 🆕 FIX 1: Host Control Variable
+let isHost = false;
+let currentPlayerName = null;
+
 const urlParams = new URLSearchParams(window.location.search);
 const playerName = urlParams.get("name")?.trim();
 const roomCode = urlParams.get("room");
 
-// DOM Elements - ANGEPASST FÜR VOICE-ONLY
+// DOM Elements
 const roomCodeEl = document.getElementById("roomCode");
 const playerNameEl = document.getElementById("playerName");
 const gamePhaseEl = document.getElementById("gamePhase");
-const currentPlayerEl = document.getElementById("currentPlayer");
-const roundCounterEl = document.getElementById("roundCounter");
 const wordDisplayEl = document.getElementById("wordDisplay");
 const roleTitleEl = document.getElementById("roleTitle");
 const wordTextEl = document.getElementById("wordText");
@@ -37,6 +39,10 @@ const maxReconnectAttempts = 5;
 let isImposter = false;
 let gameSettings = {};
 
+// 🔥 TIMER FIX: Client-side Timer Variablen
+let currentTimer = null;
+let timerDisplay = null;
+
 // Initialisierung
 if (!playerName || !roomCode) {
   alert("Fehler: Spielername oder Raumcode fehlt!");
@@ -44,27 +50,37 @@ if (!playerName || !roomCode) {
 } else {
   roomCodeEl.textContent = `Raum: ${roomCode}`;
   playerNameEl.textContent = `Du: ${playerName}`;
+  currentPlayerName = playerName;
   connectToServer();
 }
 
-// VOICE-ONLY: Nächster Spieler Funktion
-function nextPlayer() {
-  if (!socket || socket.readyState !== WebSocket.OPEN) {
-    showError("Keine Verbindung zum Server!");
-    return;
+// 🔥 TIMER FIX: Synchrone Timer-Anzeige 
+function updateGameDisplay() {
+  if (!gameState.players) return;
+  
+  const roomInfo = document.querySelector('.game-header .room-info');
+  if (roomInfo && gameState.phase) {
+    let phaseText = gameState.phase === "playing" ? "SPIELPHASE" : 
+                   gameState.phase === "voting" ? "ABSTIMMUNG" :
+                   gameState.phase === "imposterLastChance" ? "LETZTE CHANCE" : "SPIEL";
+    let roundText = `RUNDE ${gameState.round || 1}`;
+    let rightText = `DU: ${playerName}`;
+    
+    // 🔥 TIMER FIX: Zeige synchrone Timer-Anzeige
+    if (timerDisplay && timerDisplay > 0) {
+      const minutes = Math.floor(timerDisplay / 60);
+      const seconds = timerDisplay % 60;
+      rightText = `${minutes}:${seconds.toString().padStart(2, '0')} MIN`;
+    }
+    
+    roomInfo.innerHTML = `
+      <span>RAUM: ${roomCode}</span>
+      <span style="color: #C42000; font-weight: 700;">${phaseText} ${roundText}</span>
+      <span>${rightText}</span>
+    `;
   }
-
-  console.log("Voice-Only: Sende nextPlayer Signal");
-
-  // Sende "nextPlayer" Signal an Server (OHNE Wort)
-  socket.send(JSON.stringify({
-    type: "nextPlayer",
-    roomCode: roomCode,
-    playerName: playerName
-  }));
-
-  hideAllInputs();
-  showWaiting("Warte auf nächsten Spieler...");
+  
+  updatePlayersList();
 }
 
 function connectToServer() {
@@ -93,6 +109,7 @@ function connectToServer() {
     }, 500);
   };
 
+  // 🔥 BUG FIX: Erweiterte Message Handler
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
@@ -111,12 +128,23 @@ function connectToServer() {
           handleGameStateUpdate(data);
           break;
           
-        case "nextPlayerTurn": // NEUER MESSAGE TYPE
+        case "nextPlayerTurn":
           handleNextPlayerTurn(data);
           break;
           
         case "votingPhase":
+          console.log("🗳️ Voting Phase gestartet");
           handleVotingPhase(data);
+          break;
+          
+        // 🔥 NEW: Timer Updates
+        case "timerUpdate":
+          handleTimerUpdate(data);
+          break;
+          
+        // 🔥 NEW: Imposter Last Chance
+        case "imposterLastChance":
+          handleImposterLastChance(data);
           break;
           
         case "playerEliminated":
@@ -142,10 +170,6 @@ function connectToServer() {
           
         case "connected":
           console.log("Verbindung bestätigt:", data.message);
-          break;
-          
-        case "pong":
-          console.log("Pong erhalten");
           break;
           
         default:
@@ -178,10 +202,27 @@ function connectToServer() {
   };
 }
 
+// 🔥 TIMER FIX: Synchroner Timer Handler
+function handleTimerUpdate(data) {
+  timerDisplay = data.timeRemaining;
+  updateGameDisplay();
+  
+  // Warnung bei wenig Zeit
+  if (data.timeRemaining <= 10 && data.timeRemaining > 0) {
+    if (data.timeRemaining === 10) {
+      showGameMessage("⏰ Nur noch 10 Sekunden!");
+    }
+  }
+}
+
 function handleGameStarted(data) {
   console.log("Spiel gestartet! Game-State:", data.gameState);
   gameState = data.gameState;
   gameSettings = data.gameState.settings || {};
+  
+  // 🆕 FIX 1: Prüfe Host-Status
+  isHost = gameState.players[0] === playerName;
+  
   hideWaiting();
   updateGameDisplay();
 }
@@ -207,7 +248,8 @@ function handleRoleAssignment(data) {
     roleDescriptionEl.textContent = description;
     document.querySelector(".role-card").classList.add("imposter");
     
-    setupPermanentImposterGuess();
+    // 🔥 FIX: Verbesserte Floating Guess Setup
+    setupPermanentImposterGuessFixed();
   } else {
     roleTitleEl.textContent = "Du bist ein CREWMATE!";
     wordTextEl.textContent = word;
@@ -219,15 +261,13 @@ function handleRoleAssignment(data) {
 function handleGameStateUpdate(data) {
   console.log(`Game State Update erhalten:`, data.gameState);
   
-  const oldCurrentPlayer = gameState.currentPlayer;
   gameState = data.gameState;
-  
   updateGameDisplay();
   
   if (gameState.currentPlayer === playerName) {
+    console.log(`Du bist jetzt dran! Zeige Voice Game Area`);
     hideWaiting();
     showVoiceGameArea();
-    console.log(`Du bist jetzt dran!`);
   } else {
     if (gameState.phase === "playing") {
       showVoiceWaitingArea(gameState.currentPlayer);
@@ -235,7 +275,6 @@ function handleGameStateUpdate(data) {
   }
 }
 
-// NEUER HANDLER: Für nextPlayer Response
 function handleNextPlayerTurn(data) {
   console.log(`Nächster Spieler ist dran: ${data.currentPlayer}`);
   gameState.currentPlayer = data.currentPlayer;
@@ -252,15 +291,46 @@ function handleNextPlayerTurn(data) {
 }
 
 function handleVotingPhase(data) {
-  gamePhaseEl.textContent = "Abstimmungsphase";
-  currentPlayerEl.textContent = data.forced ? "Zeit abgelaufen - ZWANGSABSTIMMUNG!" : "Abstimmen oder überspringen";
+  console.log("🗳️ Voting Phase Handler - Data:", data);
+  
+  // Update game state
+  if (data.gameState) {
+    gameState = data.gameState;
+    updateGameDisplay();
+  }
   
   hideAllInputs();
   
   if (isImposter) {
+    console.log("🕵️ Zeige Imposter Voting Options");
     showImposterVotingOptions();
   } else {
+    console.log("👥 Zeige Standard Voting");
     showVoting();
+  }
+  
+  // Show forced voting message if applicable
+  if (data.forced) {
+    showGameMessage("Zeit abgelaufen - Zwangsabstimmung!");
+  }
+}
+
+// 🔥 NEW: Imposter Last Chance Handler
+function handleImposterLastChance(data) {
+  console.log("🕵️ Imposter Last Chance Phase gestartet:", data);
+  
+  gameState = data.gameState;
+  updateGameDisplay();
+  hideAllInputs();
+  
+  const eliminatedImposter = data.eliminatedImposter;
+  
+  if (playerName === eliminatedImposter) {
+    // Du bist der eliminierte Imposter - zeige Last Chance Interface
+    showImposterLastChance();
+  } else {
+    // Andere Spieler - zeige Waiting mit Info
+    showWaiting(`${eliminatedImposter} wurde eliminiert! Er hat 30 Sekunden für eine letzte Vermutung...`);
   }
 }
 
@@ -279,6 +349,9 @@ function handleGameEnded(data) {
   }
   
   gameEndAreaEl.style.display = "block";
+  
+  // 🆕 FIX 1: Update Play Again Button basierend auf Host-Status
+  updatePlayAgainButton(data.isHost);
   
   if (data.winner === "imposter") {
     gameResultEl.textContent = "Die Imposter haben gewonnen!";
@@ -299,31 +372,95 @@ function handleGameEnded(data) {
   }
 }
 
-function updateGameDisplay() {
-  if (!gameState.players) return;
+// 🆕 FIX 1: Update Play Again Button nur für Host
+function updatePlayAgainButton(hostPlayer) {
+  const playAgainBtn = document.querySelector(".play-again-btn");
+  const backBtn = document.querySelector(".back-btn");
   
-  if (gameState.phase === "playing") {
-    gamePhaseEl.textContent = "Spielphase";
-    currentPlayerEl.textContent = `${gameState.currentPlayer} ist dran`;
-    
-    if (gameState.timeRemaining !== null && gameState.timeRemaining !== undefined) {
-      const minutes = Math.floor(gameState.timeRemaining / 60);
-      const seconds = gameState.timeRemaining % 60;
-      currentPlayerEl.textContent += ` (${minutes}:${seconds.toString().padStart(2, '0')} verbleibend)`;
+  if (hostPlayer === playerName) {
+    // Du bist der Host - zeige Play Again Button
+    if (playAgainBtn) {
+      playAgainBtn.style.display = "inline-block";
+      playAgainBtn.textContent = "Nochmal spielen (Host)";
+      playAgainBtn.onclick = playAgain;
     }
-  } else if (gameState.phase === "voting") {
-    gamePhaseEl.textContent = "Abstimmungsphase";
+    if (backBtn) {
+      backBtn.textContent = "Zurück zur Lobby";
+    }
+  } else {
+    // Du bist nicht der Host - verstecke Play Again Button
+    if (playAgainBtn) {
+      playAgainBtn.style.display = "none";
+    }
+    if (backBtn) {
+      backBtn.textContent = "Zurück zur Lobby";
+    }
+    
+    // Zeige Info-Message
+    showGameMessage("Nur der Host kann ein neues Spiel starten.");
   }
-  
-  roundCounterEl.textContent = `Runde ${gameState.round || 1}`;
-  updatePlayersList();
 }
 
-// VOICE-ONLY: Angepasste Spielerliste (OHNE Wörter)
+// 🔥 FIX: Keine doppelten Messages mehr
+function nextPlayer() {
+  console.log("🎤 FERTIG Button gedrückt");
+  
+  const nextBtn = document.querySelector(".next-player-btn");
+  if (nextBtn) {
+    nextBtn.disabled = true;
+    nextBtn.textContent = "GESENDET...";
+  }
+  
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    console.error("❌ Socket Problem");
+    showError("Keine Verbindung zum Server!");
+    if (nextBtn) {
+      nextBtn.disabled = false;
+      nextBtn.textContent = "FERTIG - NÄCHSTER SPIELER";
+    }
+    return;
+  }
+
+  const message = {
+    type: "submitWord",
+    roomCode: roomCode,
+    playerName: playerName,
+    word: "[VOICE_CHAT]"
+  };
+
+  try {
+    socket.send(JSON.stringify(message));
+    console.log("✅ Voice-Chat Nachricht gesendet");
+    
+    // 🔥 FIX: Nur Voice Area verstecken, NICHT das globale Waiting zeigen
+    setTimeout(() => {
+      voiceGameAreaEl.style.display = "none"; // Nur Voice Area verstecken
+      // showWaiting() wird vom Server-Response ausgelöst, nicht hier!
+    }, 500);
+    
+  } catch (error) {
+    console.error("❌ Fehler beim Senden:", error);
+    showError("Fehler beim Senden!");
+    
+    if (nextBtn) {
+      nextBtn.disabled = false;
+      nextBtn.textContent = "FERTIG - NÄCHSTER SPIELER";
+    }
+  }
+}
+
+// 🔥 FIX: Verbesserte Spieler-Liste ohne Scrollbar
 function updatePlayersList() {
   if (!playersListEl || !gameState.players) return;
   
   playersListEl.innerHTML = "";
+  
+  // 🔥 FIX: Kompakte Ansicht bei vielen Spielern
+  if (gameState.players.length > 6) {
+    playersListEl.classList.add("compact");
+  } else {
+    playersListEl.classList.remove("compact");
+  }
   
   gameState.players.forEach(player => {
     const playerDiv = document.createElement("div");
@@ -337,8 +474,7 @@ function updatePlayersList() {
       playerDiv.classList.add("self");
     }
     
-    // VOICE-ONLY: Zeige Status statt Wörter
-    const playerStatus = player === gameState.currentPlayer ? "🎤 Spricht..." : "👂 Hört zu...";
+    const playerStatus = player === gameState.currentPlayer ? "Spricht..." : "Hört zu...";
     
     playerDiv.innerHTML = `
       <div class="player-name">${player}</div>
@@ -349,10 +485,29 @@ function updatePlayersList() {
   });
 }
 
-// VOICE-ONLY: Neue UI Funktionen
 function showVoiceGameArea() {
+  console.log("🎤 showVoiceGameArea() - Du bist dran!");
+  
   hideAllInputs();
-  voiceGameAreaEl.style.display = "block";
+  
+  const voiceArea = document.getElementById("voiceGameArea");
+  if (voiceArea) {
+    voiceArea.style.display = "block";
+    voiceArea.style.visibility = "visible";
+    voiceArea.style.opacity = "1";
+    
+    const nextBtn = voiceArea.querySelector(".next-player-btn");
+    if (nextBtn) {
+      // Button Status zurücksetzen
+      nextBtn.disabled = false;
+      nextBtn.textContent = "FERTIG - NÄCHSTER SPIELER";
+      nextBtn.onclick = nextPlayer;
+      nextBtn.style.display = "block";
+      nextBtn.style.visibility = "visible";
+      nextBtn.style.opacity = "1";
+      console.log("✅ FERTIG Button bereit");
+    }
+  }
 }
 
 function showVoiceWaitingArea(currentPlayer) {
@@ -380,7 +535,6 @@ function showVoting() {
   });
 }
 
-// VOICE-ONLY: Angepasste hideAllInputs
 function hideAllInputs() {
   voiceGameAreaEl.style.display = "none";
   voiceWaitingAreaEl.style.display = "none";
@@ -390,6 +544,12 @@ function hideAllInputs() {
   const imposterVoting = document.getElementById("imposterVotingOptions");
   if (imposterVoting) {
     imposterVoting.remove();
+  }
+  
+  // 🔥 NEW: Remove Last Chance Interface
+  const lastChance = document.getElementById("imposterLastChance");
+  if (lastChance) {
+    lastChance.remove();
   }
 }
 
@@ -402,41 +562,392 @@ function hideWaiting() {
   waitingAreaEl.style.display = "none";
 }
 
+// 🔥 FIXED: Floating Imposter Guess CSS
+function addFloatingGuessStyles() {
+  const existingStyle = document.getElementById('floatingGuessStyles');
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+  
+  const style = document.createElement('style');
+  style.id = 'floatingGuessStyles';
+  style.textContent = `
+    .floating-imposter-guess {
+      position: fixed !important;
+      bottom: 20px !important;
+      right: 20px !important;
+      width: 300px !important;
+      background: linear-gradient(135deg, #C42000 0%, #8B0000 100%) !important;
+      border: 4px solid #000000 !important;
+      border-radius: 16px !important;
+      z-index: 10000 !important;
+      box-shadow: 
+        4px 4px 0px #000000,
+        0 8px 32px rgba(0, 0, 0, 0.3) !important;
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+      overflow: hidden !important;
+    }
+
+    .floating-imposter-guess.minimized {
+      height: 60px !important;
+      width: 200px !important;
+    }
+
+    .floating-imposter-guess.minimized .floating-content > *:not(.minimize-btn):not(h4) {
+      display: none !important;
+    }
+
+    .floating-imposter-guess.minimized h4 {
+      margin: 12px 0 0 0 !important;
+      font-size: 12px !important;
+    }
+
+    .floating-content {
+      padding: 16px !important;
+      position: relative !important;
+    }
+
+    .floating-content h4 {
+      margin: 0 0 12px 0 !important;
+      color: #FFFFFF !important;
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 1px !important;
+      text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .floating-content #floatingGuessInput {
+      width: 100% !important;
+      padding: 10px 12px !important;
+      border: 3px solid #000000 !important;
+      border-radius: 8px !important;
+      margin-bottom: 12px !important;
+      background: #FFFFFF !important;
+      color: #000000 !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      box-shadow: 2px 2px 0px #000000 !important;
+      font-family: inherit !important;
+      box-sizing: border-box !important;
+    }
+
+    .floating-content #floatingGuessInput:focus {
+      outline: none !important;
+      border-color: #FFFFFF !important;
+      box-shadow: 
+        3px 3px 0px #FFFFFF,
+        0 0 0 2px rgba(255, 255, 255, 0.3) !important;
+      transform: translateY(-1px) !important;
+    }
+
+    .floating-content .guess-btn {
+      background: #FFFFFF !important;
+      color: #000000 !important;
+      border: 2px solid #000000 !important;
+      padding: 8px 16px !important;
+      font-size: 12px !important;
+      width: auto !important;
+      min-width: 80px !important;
+      margin-right: 8px !important;
+      border-radius: 8px !important;
+      box-shadow: 2px 2px 0px #000000 !important;
+      font-weight: 600 !important;
+      text-transform: uppercase !important;
+      cursor: pointer !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .floating-content .guess-btn:hover {
+      background: #000000 !important;
+      color: #FFFFFF !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 3px 3px 0px #616161 !important;
+    }
+
+    .floating-content .guess-btn:disabled {
+      background: #A6A6A6 !important;
+      color: #616161 !important;
+      cursor: not-allowed !important;
+      transform: none !important;
+      box-shadow: 1px 1px 0px #616161 !important;
+    }
+
+    .minimize-btn {
+      position: absolute !important;
+      top: 8px !important;
+      right: 8px !important;
+      background: rgba(0, 0, 0, 0.3) !important;
+      color: #FFFFFF !important;
+      border: 2px solid #000000 !important;
+      padding: 4px 8px !important;
+      border-radius: 6px !important;
+      cursor: pointer !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      width: auto !important;
+      box-shadow: 1px 1px 0px #000000 !important;
+      transition: all 0.3s ease !important;
+    }
+
+    .minimize-btn:hover {
+      background: #000000 !important;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .floating-imposter-guess {
+        width: calc(100vw - 24px) !important;
+        right: 12px !important;
+        left: 12px !important;
+        bottom: 12px !important;
+      }
+      
+      .floating-imposter-guess.minimized {
+        width: 160px !important;
+        right: 12px !important;
+        left: auto !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  console.log("✅ Floating Guess Styles hinzugefügt");
+}
+
+// 🔥 FIXED: Verbesserte setupPermanentImposterGuess Funktion
 function setupPermanentImposterGuess() {
+  // Entferne alte Floating Box falls vorhanden
+  const existingFloating = document.getElementById("floatingImposterGuess");
+  if (existingFloating) {
+    existingFloating.remove();
+    console.log("🧹 Alte Floating Guess Box entfernt");
+  }
+  
   const floatingGuess = document.createElement("div");
   floatingGuess.id = "floatingImposterGuess";
   floatingGuess.className = "floating-imposter-guess";
+  
+  // 🔥 FIX: Verbesserte HTML-Struktur mit besseren IDs
   floatingGuess.innerHTML = `
     <div class="floating-content">
-      <h4>Imposter Guess</h4>
-      <input type="text" id="floatingGuessInput" placeholder="Das geheime Wort ist..." maxlength="30" />
-      <button onclick="submitFloatingGuess()" class="guess-btn">Wort raten</button>
       <button onclick="toggleFloatingGuess()" class="minimize-btn">−</button>
+      <h4>Imposter Guess</h4>
+      <input type="text" id="floatingGuessInput" placeholder="Das geheime Wort ist..." maxlength="30" autocomplete="off" />
+      <button onclick="submitFloatingGuess()" class="guess-btn">RATEN</button>
     </div>
   `;
   
   document.body.appendChild(floatingGuess);
+  console.log("✅ Floating Imposter Guess Box erstellt");
   
-  document.getElementById("floatingGuessInput").addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      submitFloatingGuess();
-    }
-  });
-}
-
-function toggleFloatingGuess() {
-  const floating = document.getElementById("floatingImposterGuess");
-  if (floating) {
-    floating.classList.toggle("minimized");
+  // 🔥 FIX: Event Listeners korrekt hinzufügen
+  const input = document.getElementById("floatingGuessInput");
+  if (input) {
+    // Enter-Key Support
+    input.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        console.log("⌨️ Enter-Key gedrückt in Floating Input");
+        submitFloatingGuess();
+      }
+    });
+    
+    // Focus Event für Debugging
+    input.addEventListener('focus', function() {
+      console.log("🎯 Floating Input hat Focus erhalten");
+    });
+    
+    // Input Event für Live-Debugging
+    input.addEventListener('input', function() {
+      console.log(`📝 Floating Input Wert geändert: "${this.value}"`);
+    });
+    
+    console.log("✅ Event Listeners für Floating Input hinzugefügt");
+  } else {
+    console.error("❌ Floating Input nach Erstellung nicht gefunden!");
   }
 }
 
+// 🔥 FIXED: Verbesserte submitFloatingGuess Funktion
 function submitFloatingGuess() {
   const input = document.getElementById("floatingGuessInput");
+  
+  // 🔥 FIX: Prüfe ob Input existiert
+  if (!input) {
+    console.error("❌ Floating Input nicht gefunden!");
+    showError("Input-Feld nicht gefunden!");
+    return;
+  }
+  
   const guess = input.value.trim();
   
-  if (guess === "") {
+  // 🔥 FIX: Verbesserte Validierung
+  console.log("🕵️ Floating Guess Input Wert:", `"${guess}"`);
+  
+  if (guess === "" || guess.length === 0) {
+    console.error("❌ Leere Vermutung eingegeben");
     showError("Bitte gib deine Vermutung ein!");
+    input.focus(); // Focus zurück auf Input
+    return;
+  }
+  
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    console.error("❌ Socket Problem beim Floating Guess");
+    showError("Keine Verbindung zum Server!");
+    return;
+  }
+  
+  // 🔥 FIX: Button deaktivieren während dem Senden
+  const submitBtn = document.querySelector("#floatingImposterGuess .guess-btn");
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "SENDE...";
+  }
+  
+  console.log(`🕵️ Sende Floating Imposter Guess: "${guess}"`);
+  
+  const message = {
+    type: "imposterGuess",
+    roomCode: roomCode,
+    playerName: playerName,
+    guess: guess
+  };
+  
+  try {
+    socket.send(JSON.stringify(message));
+    console.log("✅ Floating Guess erfolgreich gesendet");
+    
+    input.value = "";
+    showSuccess("Vermutung abgegeben!");
+    
+    // 🔥 FIX: Floating Box minimieren nach erfolgreichem Guess
+    const floating = document.getElementById("floatingImposterGuess");
+    if (floating) {
+      floating.classList.add("minimized");
+      const minimizeBtn = floating.querySelector(".minimize-btn");
+      if (minimizeBtn) {
+        minimizeBtn.textContent = "+";
+      }
+    }
+    
+  } catch (error) {
+    console.error("❌ Fehler beim Senden des Floating Guess:", error);
+    showError("Fehler beim Senden der Vermutung!");
+  } finally {
+    // Button wieder aktivieren
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "RATEN";
+    }
+  }
+}
+
+// 🔥 FIX: Verbesserte toggleFloatingGuess Funktion
+function toggleFloatingGuess() {
+  const floating = document.getElementById("floatingImposterGuess");
+  if (!floating) {
+    console.error("❌ Floating Guess Box nicht gefunden für Toggle!");
+    return;
+  }
+  
+  const isMinimized = floating.classList.contains("minimized");
+  const btn = floating.querySelector(".minimize-btn");
+  
+  if (isMinimized) {
+    floating.classList.remove("minimized");
+    if (btn) btn.textContent = "−";
+    console.log("📖 Floating Guess Box maximiert");
+    
+    // Focus auf Input setzen nach dem Maximieren
+    setTimeout(() => {
+      const input = document.getElementById("floatingGuessInput");
+      if (input) {
+        input.focus();
+        console.log("🎯 Focus auf Floating Input gesetzt");
+      }
+    }, 100);
+  } else {
+    floating.classList.add("minimized");
+    if (btn) btn.textContent = "+";
+    console.log("📖 Floating Guess Box minimiert");
+  }
+}
+
+// 🔥 FIX: Hauptfunktion die alles zusammenführt
+function setupPermanentImposterGuessFixed() {
+  console.log("🚀 Starte Setup der Fixed Floating Imposter Guess");
+  addFloatingGuessStyles();
+  setupPermanentImposterGuess();
+}
+
+// 🔥 NEW: Imposter Last Chance UI
+function showImposterLastChance() {
+  const lastChanceDiv = document.createElement("div");
+  lastChanceDiv.id = "imposterLastChance";
+  lastChanceDiv.className = "imposter-last-chance";
+  lastChanceDiv.innerHTML = `
+    <div class="last-chance-content">
+      <h2>🕵️ LETZTE CHANCE!</h2>
+      <p>Du wurdest eliminiert, aber du hast <strong>30 Sekunden</strong> für eine letzte Vermutung!</p>
+      
+      <div class="countdown" id="lastChanceCountdown">30</div>
+      
+      <div class="input-group">
+        <input type="text" id="lastChanceGuess" placeholder="Das geheime Wort ist..." maxlength="30" />
+        <button onclick="submitLastChanceGuess()" class="guess-btn">LETZTER VERSUCH!</button>
+      </div>
+      
+      <p class="warning">⚠️ Bei falschem Guess verlierst du das Spiel!</p>
+    </div>
+  `;
+  
+  document.querySelector('.game-container').appendChild(lastChanceDiv);
+  
+  // Focus auf Input
+  document.getElementById("lastChanceGuess").focus();
+  
+  // Enter-Key Support
+  document.getElementById("lastChanceGuess").addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      submitLastChanceGuess();
+    }
+  });
+  
+  // Countdown Timer
+  let timeLeft = 30;
+  const countdownInterval = setInterval(() => {
+    timeLeft--;
+    const countdownEl = document.getElementById("lastChanceCountdown");
+    if (countdownEl) {
+      countdownEl.textContent = timeLeft;
+      
+      // Farbe ändern bei wenig Zeit
+      if (timeLeft <= 10) {
+        countdownEl.style.color = "#C42000";
+        countdownEl.style.animation = "pulse 1s infinite";
+      }
+      
+      if (timeLeft <= 0) {
+        clearInterval(countdownInterval);
+        showError("Zeit abgelaufen! Crewmates gewinnen.");
+        
+        // Remove Last Chance Interface
+        const lastChance = document.getElementById("imposterLastChance");
+        if (lastChance) {
+          lastChance.remove();
+        }
+      }
+    } else {
+      clearInterval(countdownInterval);
+    }
+  }, 1000);
+}
+
+function submitLastChanceGuess() {
+  const guess = document.getElementById("lastChanceGuess").value.trim();
+  
+  if (guess === "") {
+    showError("Bitte gib deine letzte Vermutung ein!");
     return;
   }
   
@@ -445,49 +956,45 @@ function submitFloatingGuess() {
     return;
   }
   
+  // Button deaktivieren
+  const button = document.querySelector("#imposterLastChance .guess-btn");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "GESENDET...";
+  }
+  
   socket.send(JSON.stringify({
     type: "imposterGuess",
     roomCode: roomCode,
     playerName: playerName,
     guess: guess
-  }));
+   }));
   
-  input.value = "";
-  showSuccess("Vermutung abgegeben!");
+  // Remove Last Chance Interface nach dem Senden
+  setTimeout(() => {
+    const lastChance = document.getElementById("imposterLastChance");
+    if (lastChance) {
+      lastChance.remove();
+    }
+    showWaiting("Letzte Vermutung abgegeben - warte auf Ergebnis...");
+  }, 500);
 }
 
-// IMPOSTER VOTING (behält die komplexe Logik bei)
 function showImposterVotingOptions() {
   const imposterVotingDiv = document.createElement("div");
   imposterVotingDiv.id = "imposterVotingOptions";
   imposterVotingDiv.className = "imposter-voting";
   imposterVotingDiv.innerHTML = `
     <h3>Du bist der Imposter!</h3>
-    <p>Du kannst abstimmen, das Wort raten oder die Abstimmung überspringen:</p>
+    <p>Du kannst das geheime Wort raten oder die Abstimmung überspringen:</p>
     
     <div class="imposter-actions">
-      <button onclick="showImposterVoting()" class="vote-btn" style="margin: 5px; width: auto; display: inline-block;">
-        Abstimmen
-      </button>
-      <button onclick="showImposterGuessInVoting()" class="guess-btn" style="margin: 5px; width: auto; display: inline-block;">
+      <button onclick="showImposterGuessInVoting()" class="guess-btn">
         Wort raten
       </button>
-      <button onclick="skipVote()" class="skip-btn" style="margin: 5px; width: auto; display: inline-block;">
-        ⏭Überspringen
+      <button onclick="skipVote()" class="skip-btn">
+        Überspringen
       </button>
-    </div>
-    
-    <div id="imposterVotingArea" style="display: none; margin-top: 20px;">
-      <h4>Wähle einen Spieler:</h4>
-      <div id="imposterVotingButtons" class="voting-buttons"></div>
-      <div class="voting-controls">
-        <button id="imposterConfirmVoteBtn" onclick="confirmVote()" class="confirm-btn" style="display:none;">
-          Stimme bestätigen
-        </button>
-        <button onclick="hideImposterVoting()" class="skip-btn">
-          Zurück
-        </button>
-      </div>
     </div>
     
     <div id="imposterGuessInVotingArea" style="display: none; margin-top: 20px;">
@@ -500,50 +1007,10 @@ function showImposterVotingOptions() {
     </div>
   `;
   
-  const gameStatus = document.querySelector(".game-status-header") || document.querySelector(".game-status");
-  if (gameStatus.nextSibling) {
-    gameStatus.parentNode.insertBefore(imposterVotingDiv, gameStatus.nextSibling);
-  } else {
-    gameStatus.parentNode.appendChild(imposterVotingDiv);
+  const gameContainer = document.querySelector('.game-container');
+  if (gameContainer) {
+    gameContainer.appendChild(imposterVotingDiv);
   }
-}
-
-function showImposterVoting() {
-  document.querySelector(".imposter-actions").style.display = "none";
-  
-  const votingArea = document.getElementById("imposterVotingArea");
-  votingArea.style.display = "block";
-  
-  const votingButtons = document.getElementById("imposterVotingButtons");
-  votingButtons.innerHTML = "";
-  selectedVote = null;
-  document.getElementById("imposterConfirmVoteBtn").style.display = "none";
-  
-  gameState.players.forEach(player => {
-    if (player !== playerName) {
-      const button = document.createElement("button");
-      button.className = "vote-btn";
-      button.textContent = player;
-      button.onclick = () => selectImposterVote(player, button);
-      votingButtons.appendChild(button);
-    }
-  });
-}
-
-function selectImposterVote(player, buttonEl) {
-  document.querySelectorAll('#imposterVotingButtons .vote-btn').forEach(btn => {
-    btn.classList.remove('selected');
-  });
-  
-  buttonEl.classList.add('selected');
-  selectedVote = player;
-  document.getElementById("imposterConfirmVoteBtn").style.display = "inline-block";
-}
-
-function hideImposterVoting() {
-  document.querySelector(".imposter-actions").style.display = "block";
-  document.getElementById("imposterVotingArea").style.display = "none";
-  selectedVote = null;
 }
 
 function showImposterGuessInVoting() {
@@ -581,7 +1048,6 @@ function submitImposterVotingGuess() {
   showWaiting("Vermutung abgegeben - warte auf Ergebnis...");
 }
 
-// STANDARD VOTING FUNKTIONEN
 function selectVote(player, buttonEl) {
   document.querySelectorAll('.vote-btn').forEach(btn => {
     btn.classList.remove('selected');
@@ -650,7 +1116,19 @@ function skipImposterGuess() {
   showWaiting("Noch nicht bereit - warte auf nächste Runde...");
 }
 
+// 🆕 FIX 1: Nur Host kann Play Again starten
 function playAgain() {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    showError("Keine Verbindung zum Server!");
+    return;
+  }
+  
+  // Zusätzliche Client-side Validierung
+  if (!isHost) {
+    showError("Nur der Host kann ein neues Spiel starten!");
+    return;
+  }
+  
   socket.send(JSON.stringify({
     type: "playAgain",
     roomCode: roomCode,
@@ -685,14 +1163,18 @@ function showError(message) {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #C42000;
-    color: white;
+    background: linear-gradient(135deg, #C42000 0%, #8B0000 100%);
+    color: #FFFFFF;
     padding: 12px 20px;
-    border-radius: 8px;
+    border-radius: 12px;
+    border: 3px solid #000000;
     z-index: 1000;
-    animation: slideIn 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-weight: 500;
+    box-shadow: 3px 3px 0px #000000;
+    animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 12px;
   `;
   
   document.body.appendChild(toast);
@@ -710,14 +1192,18 @@ function showSuccess(message) {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #000000;
-    color: white;
+    background: linear-gradient(135deg, #000000 0%, #333333 100%);
+    color: #FFFFFF;
     padding: 12px 20px;
-    border-radius: 8px;
+    border-radius: 12px;
+    border: 3px solid #000000;
     z-index: 1000;
-    animation: slideIn 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-weight: 500;
+    box-shadow: 3px 3px 0px #000000;
+    animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 12px;
   `;
   
   document.body.appendChild(toast);
@@ -735,14 +1221,18 @@ function showGameMessage(message) {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: #616161;
-    color: white;
+    background: linear-gradient(135deg, #616161 0%, #4D4D4D 100%);
+    color: #FFFFFF;
     padding: 12px 20px;
-    border-radius: 8px;
+    border-radius: 12px;
+    border: 3px solid #000000;
     z-index: 1000;
-    animation: slideIn 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-weight: 500;
+    box-shadow: 3px 3px 0px #000000;
+    animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 12px;
   `;
   
   document.body.appendChild(toast);
@@ -773,64 +1263,79 @@ window.addEventListener("beforeunload", () => {
   }
 });
 
-setInterval(() => {
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    socket.send(JSON.stringify({ type: "ping" }));
-  }
-}, 30000);
-
-// CSS für Voice-Only
+// CSS für Animationen und Fixes
 const style = document.createElement('style');
 style.textContent = `
-  @keyframes slideIn {
-    from {
-      transform: translateX(100%);
-      opacity: 0;
+  @keyframes slideInRight {
+    from { 
+      transform: translateX(100%) rotate(5deg); 
+      opacity: 0; 
     }
-    to {
-      transform: translateX(0);
-      opacity: 1;
+    to { 
+      transform: translateX(0) rotate(0deg); 
+      opacity: 1; 
     }
   }
   
-  .game-end-reason {
-    font-style: italic;
-    margin-top: 15px;
-    padding: 15px;
-    background: rgba(107, 114, 128, 0.1);
-    border-radius: 8px;
-    border-left: 4px solid #6B7280;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  
-  .imposter-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin: 20px 0;
-  }
-  
-  .imposter-actions button {
-    min-width: 120px;
-    padding: 12px 16px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-  }
-  
-  @media (max-width: 768px) {
-    .imposter-actions {
-      flex-direction: column;
-      align-items: center;
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
     }
-    
-    .imposter-actions button {
-      width: 100%;
-      max-width: 250px;
+    50% {
+      transform: scale(1.1);
     }
+  }
+  
+  /* 🔥 FIX: Spieler-Liste ohne Scrollbar */
+  .players-section {
+    margin: 16px 0;
+    flex-shrink: 0;
+    height: 200px;
+    overflow: hidden;
+  }
+
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    height: 100%;
+    overflow: hidden;
+    align-content: start;
+  }
+
+  .players-grid.compact {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .players-grid.compact .player-card {
+    padding: 8px;
+    font-size: 12px;
+  }
+  
+  /* 🆕 FIX 1: Host-only Play Again Button Styles */
+  .play-again-btn[style*="display: none"] {
+    display: none !important;
+  }
+  
+  .play-again-btn:not([style*="display: none"]) {
+    background: linear-gradient(135deg, #000000 0%, #333333 100%) !important;
+    border: 3px solid #C42000 !important;
+  }
+  
+  .play-again-btn:not([style*="display: none"]):hover {
+    background: linear-gradient(135deg, #C42000 0%, #8B0000 100%) !important;
+    border-color: #000000 !important;
   }
 `;
 document.head.appendChild(style);
+
+// Auto-Fix für Voice Game Area
+setInterval(() => {
+  if (gameState.currentPlayer === playerName && 
+      document.getElementById("voiceGameArea").style.display === "none" &&
+      gameState.phase === "playing") {
+    console.log("Auto-Fix: Zeige Voice Game Area für", playerName);
+    showVoiceGameArea();
+  }
+}, 1000);
