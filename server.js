@@ -300,7 +300,8 @@ function startGame(roomCode) {
     roundEndTime: null,
     timerInterval: null,
     settings: settings,
-    hostPlayer: room.players[0] // 🆕 FIX 1: Speichere Host für Play Again Control
+    hostPlayer: room.players[0], // 🆕 FIX 1: Speichere Host für Play Again Control
+    playersThisRound: 0 // 🆕 FIX: Zähler für Spieler in aktueller Runde
   };
 
   broadcastToRoom(roomCode, { type: "startGame" });
@@ -362,7 +363,7 @@ function startGame(roomCode) {
   return true;
 }
 
-// 🔥 BUG FIX: Verbesserte nextPlayer Funktion
+// 🔥 BUG FIX: KOMPLETT ÜBERARBEITETE nextPlayer Funktion
 function nextPlayer(roomCode) {
   const game = games[roomCode];
   if (!game) {
@@ -371,15 +372,20 @@ function nextPlayer(roomCode) {
   }
 
   console.log(`🔄 nextPlayer in Raum ${roomCode}: Aktueller Index ${game.currentPlayerIndex}`);
+  console.log(`📊 Spieler in dieser Runde: ${game.playersThisRound || 0}/${game.players.length}`);
 
-  game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
-  game.currentPlayer = game.players[game.currentPlayerIndex];
+  // Zähle, wie viele Spieler in dieser Runde schon dran waren
+  if (!game.playersThisRound) {
+    game.playersThisRound = 1; // Der erste Spieler war schon dran
+  } else {
+    game.playersThisRound++;
+  }
 
-  console.log(`➡️ Nächster Spieler: ${game.currentPlayer} (Index: ${game.currentPlayerIndex})`);
-
-  // BUG FIX: Wenn wir wieder bei Index 0 sind, ist die Runde vorbei
-  if (game.currentPlayerIndex === 0) {
+  // Prüfe, ob alle Spieler dran waren
+  if (game.playersThisRound >= game.players.length) {
+    // Alle Spieler waren dran - Runde beenden
     game.round++;
+    game.playersThisRound = 0; // Reset für nächste Runde
     
     // Stop Timer
     if (game.timerInterval) {
@@ -387,40 +393,48 @@ function nextPlayer(roomCode) {
       game.timerInterval = null;
     }
     
-    console.log(`🔄 Runde ${game.round} beendet - Abstimmungsphase verfügbar`);
+    console.log(`🔄 Runde ${game.round} beendet - alle ${game.players.length} Spieler waren dran`);
+    console.log(`🗳️ Starte Abstimmungsphase`);
     startVotingPhase(roomCode, false);
-  } else {
-    // BUG FIX: Für normale Spielerwechsel sende nextPlayerTurn statt gameState
-    const now = Date.now();
-    const timeRemaining = game.roundEndTime ? Math.max(0, Math.ceil((game.roundEndTime - now) / 1000)) : null;
-    
-    const nextPlayerMessage = {
-      type: "nextPlayerTurn",
-      currentPlayer: game.currentPlayer,
-      currentPlayerIndex: game.currentPlayerIndex,
-      gameState: {
-        players: game.players,
-        currentPlayer: game.currentPlayer,
-        round: game.round,
-        phase: game.phase,
-        timeRemaining: timeRemaining
-      }
-    };
+    return;
+  }
 
-    console.log(`📡 Sende nextPlayerTurn an alle Spieler in Raum ${roomCode}`);
-    console.log(`🎯 Neuer aktueller Spieler: ${game.currentPlayer}`);
-    
-    const sentCount = broadcastToGame(roomCode, nextPlayerMessage);
-    
-    if (sentCount === 0) {
-      console.log(`⚠️ Kein Spieler hat nextPlayerTurn erhalten - versuche erneut in 2 Sekunden`);
-      setTimeout(() => {
-        if (games[roomCode]) {
-          console.log(`🔄 Retry nextPlayerTurn Broadcast für Raum ${roomCode}`);
-          broadcastToGame(roomCode, nextPlayerMessage);
-        }
-      }, 2000);
+  // Nicht alle waren dran - nächster Spieler
+  game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+  game.currentPlayer = game.players[game.currentPlayerIndex];
+
+  console.log(`➡️ Nächster Spieler: ${game.currentPlayer} (Index: ${game.currentPlayerIndex})`);
+  console.log(`📊 Spieler ${game.playersThisRound}/${game.players.length} waren in dieser Runde dran`);
+
+  // Sende Update an alle Spieler
+  const now = Date.now();
+  const timeRemaining = game.roundEndTime ? Math.max(0, Math.ceil((game.roundEndTime - now) / 1000)) : null;
+  
+  const nextPlayerMessage = {
+    type: "nextPlayerTurn",
+    currentPlayer: game.currentPlayer,
+    currentPlayerIndex: game.currentPlayerIndex,
+    gameState: {
+      players: game.players,
+      currentPlayer: game.currentPlayer,
+      round: game.round,
+      phase: game.phase,
+      timeRemaining: timeRemaining
     }
+  };
+
+  console.log(`📡 Sende nextPlayerTurn an alle Spieler in Raum ${roomCode}`);
+  
+  const sentCount = broadcastToGame(roomCode, nextPlayerMessage);
+  
+  if (sentCount === 0) {
+    console.log(`⚠️ Kein Spieler hat nextPlayerTurn erhalten - versuche erneut in 2 Sekunden`);
+    setTimeout(() => {
+      if (games[roomCode]) {
+        console.log(`🔄 Retry nextPlayerTurn Broadcast für Raum ${roomCode}`);
+        broadcastToGame(roomCode, nextPlayerMessage);
+      }
+    }, 2000);
   }
 }
 
@@ -581,6 +595,7 @@ function checkVotingComplete(roomCode) {
       game.phase = "playing";
       game.currentPlayerIndex = 0;
       game.currentPlayer = game.players[0];
+      game.playersThisRound = 0; // 🆕 FIX: Reset Rundenzähler
       
       // 🔥 TIMER FIX: Starte neuen Timer für nächste Runde
       if (game.settings.roundTimeLimit > 0) {
@@ -607,6 +622,7 @@ function continueGameAfterElimination(roomCode, eliminated, imposterWon) {
   game.phase = "playing";
   game.currentPlayerIndex = 0;
   game.currentPlayer = game.players[0];
+  game.playersThisRound = 0; // 🆕 FIX: Reset Rundenzähler
   
   // 🔥 TIMER FIX: Starte neuen Timer
   if (game.settings.roundTimeLimit > 0) {
